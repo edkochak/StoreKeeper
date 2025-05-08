@@ -1,0 +1,11 @@
+aiogram
+SQLAlchemy
+asyncpg
+python-dotenv
+pandas
+openpyxl
+matplotlib
+pytest
+pytest-asyncio
+aiosqlite
+redis>=4.4.0

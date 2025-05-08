@@ -1,0 +1,33 @@
+from aiogram.fsm.state import State, StatesGroup
+
+
+class AuthStates(StatesGroup):
+    waiting_name = State()
+
+
+class RevenueStates(StatesGroup):
+    waiting_date = State()  # Новое состояние для выбора даты
+    waiting_store = State()
+    waiting_amount = State()
+
+
+class PlanStates(StatesGroup):
+    waiting_store = State()
+    waiting_plan = State()
+
+
+class AssignStates(StatesGroup):
+    waiting_manager = State()
+    waiting_store = State()
+
+
+# Добавляем новые состояния
+class CreateStoreStates(StatesGroup):
+    waiting_name = State()
+    waiting_plan = State()
+
+
+class CreateManagerStates(StatesGroup):
+    waiting_first_name = State()
+    waiting_last_name = State()
+    waiting_store = State()
