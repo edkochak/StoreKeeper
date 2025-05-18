@@ -24,7 +24,7 @@ from app.models.user import User
 
 @pytest.fixture
 def create_message():
-    def _create_message(text="", chat_id=329008489, from_user_id=329008489):
+    def _create_message(text="", chat_id=123456789, from_user_id=123456789):
         message = AsyncMock(spec=Message)
         message.text = text
         message.chat = Chat(id=chat_id, type="private")
