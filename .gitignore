@@ -40,16 +40,22 @@ htmlcov/
 *.swo
 
 # Сгенерированные файлы и ресурсы
-/resources/
 *.xlsx
 *.png
 *.jpg
 *.jpeg
 *.pdf
 *.csv
+
+# LaTeX файлы
 *.aux
+*.log
 *.out
 *.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+user_manual.pdf
 
 # Базы данных
 *.sqlite

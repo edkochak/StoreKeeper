@@ -2,6 +2,8 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload  # <-- импортируем
+from sqlalchemy.sql import and_  # <-- импортируем
+from sqlalchemy.sql import func  # <-- импортируем
 from app.models.user import User
 
 
@@ -19,6 +21,32 @@ class UserRepository:
             .filter_by(first_name=first_name, last_name=last_name)
         )
         return result.scalars().first()
+
+    async def get_by_name(self, first_name: str, last_name: str) -> Optional[User]:
+        """Получить пользователя по имени и фамилии"""
+        query = select(User).where(
+            and_(
+                func.lower(User.first_name) == func.lower(first_name),
+                func.lower(User.last_name) == func.lower(last_name)
+            )
+        )
+        result = await self.session.execute(query)
+        user = result.scalars().first()
+        return user
+
+    async def get_by_id(self, user_id: int) -> Optional[User]:
+        """
+        Получает пользователя по ID.
+        
+        Args:
+            user_id: ID пользователя
+            
+        Returns:
+            Optional[User]: Объект пользователя или None, если пользователь не найден
+        """
+        query = select(User).where(User.id == user_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
 
     async def create(
         self, first_name: str, last_name: str, role: str, store_id: Optional[int] = None
