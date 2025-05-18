@@ -74,4 +74,4 @@ dump.rdb
 .pytest_cache/
 .coverage.*
 
-.github
+.github/copilot-instructions.md
