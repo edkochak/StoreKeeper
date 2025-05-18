@@ -641,8 +641,8 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
     data = await state.get_data()
     manager_name = data.get("manager_name")
     
-    # Изменяем разбор имени, сохраняя только первое слово как имя, остальное как фамилию
-    parts = manager_name.split(' ', 1)  # Разделяем только на первую и вторую часть
+    # Изменение: разбираем имя менеджера, считая первое слово именем, а все остальное фамилией
+    parts = manager_name.split(" ", 1)  # Разделяем только на две части: имя и остальное
     if len(parts) < 2:
         await message.answer(
             "Ошибка в имени менеджера. Пожалуйста, начните заново.",
@@ -651,8 +651,8 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
         await state.clear()
         return
     
-    # Теперь parts[0] - это первое имя, parts[1] - все остальное (фамилия)
     first_name, last_name = parts[0], parts[1]
+    logger.info(f"Разбор имени менеджера: имя='{first_name}', фамилия='{last_name}'")
     
     if field == "Изменить имя":
         await state.update_data(edit_field="first_name", first_name=first_name, last_name=last_name)
@@ -706,14 +706,14 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
     async with get_session() as session:
         user_service = UserService(session)
         
-        # Отладочный лог для исследования проблемы
+        # Добавляем логирование для отладки
         logger.info(f"Поиск менеджера: имя='{first_name}', фамилия='{last_name}'")
         
         manager = await user_service.get_by_name(first_name, last_name)
         
         if not manager:
             await message.answer(
-                f"Менеджер '{first_name} {last_name}' не найден.", 
+                f"Менеджер '{first_name} {last_name}' не найден. Проверьте правильность имени и фамилии.", 
                 reply_markup=get_main_keyboard("admin")
             )
             await state.clear()

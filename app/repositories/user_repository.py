@@ -5,7 +5,9 @@ from sqlalchemy.orm import selectinload  # <-- импортируем
 from sqlalchemy.sql import and_  # <-- импортируем
 from sqlalchemy.sql import func  # <-- импортируем
 from app.models.user import User
+import logging
 
+logger = logging.getLogger(__name__)
 
 class UserRepository:
     def __init__(self, session: AsyncSession):
@@ -24,15 +26,27 @@ class UserRepository:
 
     async def get_by_name(self, first_name: str, last_name: str) -> Optional[User]:
         """Получить пользователя по имени и фамилии"""
-        query = select(User).where(
-            and_(
-                func.lower(User.first_name) == func.lower(first_name),
-                func.lower(User.last_name) == func.lower(last_name)
+        # Используем ILIKE для регистронезависимого поиска (PostgreSQL)
+        try:
+            query = select(User).where(
+                and_(
+                    func.lower(User.first_name) == func.lower(first_name),
+                    func.lower(User.last_name) == func.lower(last_name)
+                )
             )
-        )
-        result = await self.session.execute(query)
-        user = result.scalars().first()
-        return user
+            result = await self.session.execute(query)
+            return result.scalars().first()
+        except Exception as e:
+            logger.error(f"Ошибка при поиске пользователя: {e}")
+            # Запасной вариант - ищем по точному совпадению
+            query = select(User).where(
+                and_(
+                    User.first_name == first_name,
+                    User.last_name == last_name
+                )
+            )
+            result = await self.session.execute(query)
+            return result.scalars().first()
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """
