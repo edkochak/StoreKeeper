@@ -29,26 +29,30 @@ class UserRepository:
         """Получить пользователя по имени и фамилии"""
         # Используем ILIKE для регистронезависимого поиска (PostgreSQL)
         try:
-            query = select(User).where(
-                and_(
-                    func.lower(User.first_name) == func.lower(first_name),
-                    func.lower(User.last_name) == func.lower(last_name),
+            query = (
+                select(User)
+                .where(
+                    and_(
+                        func.lower(User.first_name) == func.lower(first_name),
+                        func.lower(User.last_name) == func.lower(last_name),
+                    )
                 )
-            ).options(
-                selectinload(User.store)  # Жадно загружаем связанный магазин
+                .options(selectinload(User.store))  # Жадно загружаем связанный магазин
             )
             result = await self.session.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Ошибка при поиске пользователя: {e}")
             # Запасной вариант - ищем по точному совпадению
-            query = select(User).where(
-                and_(
-                    User.first_name == first_name,
-                    User.last_name == last_name,
+            query = (
+                select(User)
+                .where(
+                    and_(
+                        User.first_name == first_name,
+                        User.last_name == last_name,
+                    )
                 )
-            ).options(
-                selectinload(User.store)  # Жадно загружаем связанный магазин
+                .options(selectinload(User.store))  # Жадно загружаем связанный магазин
             )
             result = await self.session.execute(query)
             return result.scalar_one_or_none()

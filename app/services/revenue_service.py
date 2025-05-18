@@ -325,10 +325,10 @@ class RevenueService:
     async def get_status(self, store_id: int) -> Optional[Dict[str, Any]]:
         """
         Получает статус выполнения плана для магазина.
-        
+
         Args:
             store_id: ID магазина
-            
+
         Returns:
             Optional[Dict[str, Any]]: Словарь со статусом или None, если данные не найдены
         """
@@ -336,13 +336,13 @@ class RevenueService:
         query = select(Store).where(Store.id == store_id)
         result = await self.session.execute(query)
         store = result.scalar_one_or_none()
-        
+
         if not store:
             return None
-        
+
         # Получаем суммарную выручку за текущий месяц используя новый метод
         total = await self.get_month_total(store_id)
-        
+
         # Получаем последнюю запись о выручке
         query = (
             select(Revenue)
@@ -352,33 +352,31 @@ class RevenueService:
         )
         result = await self.session.execute(query)
         last_revenue = result.scalar_one_or_none()
-        
+
         # Вычисляем процент выполнения плана
         percent = int((total / store.plan * 100) if store.plan > 0 else 0)
-        
+
         # Формируем результат
-        status = {
-            "total": total,
-            "plan": store.plan,
-            "percent": percent
-        }
-        
+        status = {"total": total, "plan": store.plan, "percent": percent}
+
         # Добавляем информацию о последней выручке, если есть
         if last_revenue:
             status["last_date"] = last_revenue.date.isoformat()
             status["last_amount"] = last_revenue.amount
-        
+
         return status
 
-    async def get_month_total(self, store_id: int, month: Optional[int] = None, year: Optional[int] = None) -> float:
+    async def get_month_total(
+        self, store_id: int, month: Optional[int] = None, year: Optional[int] = None
+    ) -> float:
         """
         Получает суммарную выручку за указанный месяц и год.
-        
+
         Args:
             store_id: ID магазина
             month: Номер месяца (1-12), если не указан, используется текущий месяц
             year: Год, если не указан, используется текущий год
-            
+
         Returns:
             float: Суммарная выручка за месяц
         """
@@ -386,23 +384,23 @@ class RevenueService:
         now = datetime.datetime.now()
         month = month or now.month
         year = year or now.year
-        
+
         # Вычисляем первый и последний день месяца
         first_day = datetime.date(year, month, 1)
         last_day = datetime.date(year, month, calendar.monthrange(year, month)[1])
-        
+
         # Запрос на сумму выручки за период
         query = select(func.sum(Revenue.amount)).where(
             and_(
                 Revenue.store_id == store_id,
                 Revenue.date >= first_day,
-                Revenue.date <= last_day
+                Revenue.date <= last_day,
             )
         )
-        
+
         result = await self.session.execute(query)
         total = result.scalar() or 0.0
-        
+
         return total
 
     async def _get_revenue_for_report(self) -> List[Dict[str, Any]]:
@@ -422,7 +420,11 @@ class RevenueService:
             data.append(
                 {
                     "store_name": store.name if store else f"Магазин ID:{rev.store_id}",
-                    "date": rev.date.isoformat() if isinstance(rev.date, datetime.date) else rev.date,
+                    "date": (
+                        rev.date.isoformat()
+                        if isinstance(rev.date, datetime.date)
+                        else rev.date
+                    ),
                     "amount": rev.amount,
                     "plan": store.plan if store else None,
                 }

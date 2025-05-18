@@ -14,8 +14,9 @@ class StoreRepository:
         # жадно подгружаем менеджеров, чтобы не было lazy-load вне сессии
         result = await self.session.execute(
             select(Store).options(
-                selectinload(Store.managers)
-                .selectinload(User.store)  # вложенная загрузка store у менеджеров
+                selectinload(Store.managers).selectinload(
+                    User.store
+                )  # вложенная загрузка store у менеджеров
             )
         )
         return result.scalars().all()
