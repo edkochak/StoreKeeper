@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class UserRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -31,7 +32,7 @@ class UserRepository:
             query = select(User).where(
                 and_(
                     func.lower(User.first_name) == func.lower(first_name),
-                    func.lower(User.last_name) == func.lower(last_name)
+                    func.lower(User.last_name) == func.lower(last_name),
                 )
             )
             result = await self.session.execute(query)
@@ -40,10 +41,7 @@ class UserRepository:
             logger.error(f"Ошибка при поиске пользователя: {e}")
             # Запасной вариант - ищем по точному совпадению
             query = select(User).where(
-                and_(
-                    User.first_name == first_name,
-                    User.last_name == last_name
-                )
+                and_(User.first_name == first_name, User.last_name == last_name)
             )
             result = await self.session.execute(query)
             return result.scalars().first()
@@ -51,10 +49,10 @@ class UserRepository:
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """
         Получает пользователя по ID.
-        
+
         Args:
             user_id: ID пользователя
-            
+
         Returns:
             Optional[User]: Объект пользователя или None, если пользователь не найден
         """

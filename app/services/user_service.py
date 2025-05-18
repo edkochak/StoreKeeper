@@ -46,10 +46,10 @@ class UserService:
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """
         Получает пользователя по ID.
-        
+
         Args:
             user_id: ID пользователя
-            
+
         Returns:
             Optional[User]: Объект пользователя или None, если пользователь не найден
         """
@@ -61,10 +61,10 @@ class UserService:
     def can_view_reports(self, user: User) -> bool:
         """
         Проверяет, может ли пользователь просматривать отчеты.
-        
+
         Args:
             user: Пользователь для проверки
-            
+
         Returns:
             bool: True если пользователь может просматривать отчеты, иначе False
         """
@@ -73,10 +73,10 @@ class UserService:
     def can_manage_stores(self, user: User) -> bool:
         """
         Проверяет, может ли пользователь управлять магазинами.
-        
+
         Args:
             user: Пользователь для проверки
-            
+
         Returns:
             bool: True если пользователь может управлять магазинами, иначе False
         """
@@ -85,10 +85,10 @@ class UserService:
     def can_manage_users(self, user: User) -> bool:
         """
         Проверяет, может ли пользователь управлять другими пользователями.
-        
+
         Args:
             user: Пользователь для проверки
-            
+
         Returns:
             bool: True если пользователь может управлять пользователями, иначе False
         """

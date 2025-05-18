@@ -5,10 +5,16 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
-from app.handlers.admin_handler import (cmd_edit_store, process_edit_store_selection, 
-                                       process_edit_store_field, process_edit_store_value,
-                                       cmd_edit_manager, process_edit_manager_selection,
-                                       process_edit_manager_field, process_edit_manager_value)
+from app.handlers.admin_handler import (
+    cmd_edit_store,
+    process_edit_store_selection,
+    process_edit_store_field,
+    process_edit_store_value,
+    cmd_edit_manager,
+    process_edit_manager_selection,
+    process_edit_manager_field,
+    process_edit_manager_value,
+)
 from app.core.states import EditStoreStates, EditManagerStates
 from app.services.store_service import StoreService
 from app.services.user_service import UserService
@@ -28,6 +34,7 @@ def create_message():
         message.answer = AsyncMock()
         message.answer.return_value = AsyncMock()
         return message
+
     return _create_message
 
 
@@ -46,11 +53,11 @@ def session_patch(session):
     class SessionContext:
         async def __aenter__(self):
             return session
-        
+
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             pass
-    
-    with patch('app.handlers.admin_handler.get_session', return_value=SessionContext()):
+
+    with patch("app.handlers.admin_handler.get_session", return_value=SessionContext()):
         yield session
 
 
@@ -60,15 +67,15 @@ async def test_cmd_edit_store(create_message, state, session_patch):
     # Создаем тестовый магазин
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("TestEditStore")
-    
+
     # Вызываем функцию обработчика
     message = create_message()
     await cmd_edit_store(message, state)
-    
+
     # Проверяем, что сообщение было отправлено и состояние установлено
     message.answer.assert_called_once()
     assert "Выберите магазин для редактирования" in message.answer.call_args[0][0]
-    
+
     # Проверяем, что состояние правильно установлено
     assert await state.get_state() == EditStoreStates.waiting_store
 
@@ -80,37 +87,41 @@ async def test_edit_store_flow(create_message, state, session_patch):
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("FlowTestStore")
     await store_svc.set_plan(store, 100.0)
-    
+
     # Шаг 1: Выбор магазина
     message1 = create_message("FlowTestStore")
     await process_edit_store_selection(message1, state)
-    
+
     # Проверяем состояние после выбора магазина
     assert await state.get_state() == EditStoreStates.waiting_field
     state_data = await state.get_data()
     assert state_data["store_name"] == "FlowTestStore"
-    
+
     # Шаг 2: Выбор поля для редактирования (план)
     message2 = create_message("Изменить план")
     await process_edit_store_field(message2, state)
-    
+
     # Проверяем состояние после выбора поля
     assert await state.get_state() == EditStoreStates.waiting_value
     state_data = await state.get_data()
     assert state_data["edit_field"] == "plan"
-    
+
     # Создаем сессию для проверки изменений в базе
     store_service = StoreService(session_patch)
-    
+
     # Шаг 3: Ввод нового значения
     # Создаем новый AsyncMock для message3, чтобы не конфликтовать с предыдущими вызовами
     message3 = create_message("200.5")
-    
+
     # Патчим store_service.get_by_name в процессе выполнения process_edit_store_value
-    with patch('app.services.store_service.StoreService.get_by_name', return_value=store):
-        with patch('app.services.store_service.StoreService.set_plan', return_value=store):
+    with patch(
+        "app.services.store_service.StoreService.get_by_name", return_value=store
+    ):
+        with patch(
+            "app.services.store_service.StoreService.set_plan", return_value=store
+        ):
             await process_edit_store_value(message3, state)
-    
+
     # Проверяем, что состояние очищено
     assert await state.get_state() is None
 
@@ -121,17 +132,19 @@ async def test_cmd_edit_manager(create_message, state, session_patch):
     # Создаем тестового менеджера
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("TestEdit", "Manager", "manager")
-    
+
     # Патчим UserService.get_all_users, чтобы вернуть список, включающий созданного менеджера
-    with patch('app.services.user_service.UserService.get_all_users', return_value=[manager]):
+    with patch(
+        "app.services.user_service.UserService.get_all_users", return_value=[manager]
+    ):
         # Вызываем функцию обработчика
         message = create_message()
         await cmd_edit_manager(message, state)
-        
+
         # Проверяем, что сообщение было отправлено и состояние установлено
         message.answer.assert_called_once()
         assert "Выберите менеджера для редактирования" in message.answer.call_args[0][0]
-        
+
         # Проверяем, что состояние правильно установлено
         assert await state.get_state() == EditManagerStates.waiting_manager
 
@@ -142,42 +155,51 @@ async def test_edit_manager_flow(create_message, state, session_patch):
     # Создаем тестового менеджера и магазин
     user_svc = UserService(session_patch)
     store_svc = StoreService(session_patch)
-    
+
     manager = await user_svc.get_or_create("FlowTest", "Manager", "manager")
     store = await store_svc.get_or_create("ManagerTestStore")
-    
+
     # Шаг 1: Выбор менеджера
     message1 = create_message("FlowTest Manager")
     await process_edit_manager_selection(message1, state)
-    
+
     # Проверяем состояние после выбора менеджера
     assert await state.get_state() == EditManagerStates.waiting_field
     state_data = await state.get_data()
     assert state_data["manager_name"] == "FlowTest Manager"
-    
+
     # Шаг 2: Выбор поля для редактирования (магазин)
     message2 = create_message("Изменить магазин")
-    
+
     # Патчим StoreService.list_stores, чтобы вернуть список с созданным магазином
-    with patch('app.services.store_service.StoreService.list_stores', return_value=[store]):
+    with patch(
+        "app.services.store_service.StoreService.list_stores", return_value=[store]
+    ):
         await process_edit_manager_field(message2, state)
-    
+
     # Проверяем состояние после выбора поля
     assert await state.get_state() == EditManagerStates.waiting_value
     state_data = await state.get_data()
     assert state_data["edit_field"] == "store"
     assert state_data["first_name"] == "FlowTest"
     assert state_data["last_name"] == "Manager"
-    
+
     # Шаг 3: Выбор магазина
     message3 = create_message("ManagerTestStore")
-    
+
     # Патчим необходимые методы для успешного выполнения flow
-    with patch('app.services.user_service.UserService.get_by_name', return_value=manager):
-        with patch('app.services.store_service.StoreService.get_by_name', return_value=store):
-            with patch('app.services.user_service.UserService.assign_store', return_value=manager):
+    with patch(
+        "app.services.user_service.UserService.get_by_name", return_value=manager
+    ):
+        with patch(
+            "app.services.store_service.StoreService.get_by_name", return_value=store
+        ):
+            with patch(
+                "app.services.user_service.UserService.assign_store",
+                return_value=manager,
+            ):
                 await process_edit_manager_value(message3, state)
-    
+
     # Проверяем, что состояние очищено
     assert await state.get_state() is None
 
@@ -187,11 +209,13 @@ async def test_edit_manager_flow(create_message, state, session_patch):
 async def test_edit_manager_multiname_flow(create_message, state, session_patch):
     """Тест редактирования менеджера с многословной фамилией (отключен)"""
     user_svc = UserService(session_patch)
-    manager = await user_svc.get_or_create("Екатерина", "Тараскина Тараскина", "manager")
-    
+    manager = await user_svc.get_or_create(
+        "Екатерина", "Тараскина Тараскина", "manager"
+    )
+
     message1 = create_message("Екатерина Тараскина Тараскина")
     await process_edit_manager_selection(message1, state)
-    
+
     # Проверяем состояние
     assert await state.get_state() == EditManagerStates.waiting_field
     data = await state.get_data()
@@ -205,17 +229,19 @@ async def test_manager_delete_flow(create_message, state, session_patch):
     """Тест удаления менеджера"""
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("Single", "Word", "manager")
-    
+
     # Шаг 1: Выбор менеджера
     message1 = create_message("Single Word")
     await process_edit_manager_selection(message1, state)
     assert await state.get_state() == EditManagerStates.waiting_field
-    
+
     # Шаг 2: Удаление менеджера
     message2 = create_message("Удалить менеджера")
-    with patch('app.services.user_service.UserService.delete_user', return_value=None) as mock_del:
+    with patch(
+        "app.services.user_service.UserService.delete_user", return_value=None
+    ) as mock_del:
         await process_edit_manager_field(message2, state)
-    
+
     mock_del.assert_called_once_with(manager)
     assert await state.get_state() is None
 
@@ -225,17 +251,19 @@ async def test_store_delete_flow(create_message, state, session_patch):
     """Тест удаления магазина"""
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("OneWordStore")
-    
+
     # Шаг 1: Выбор магазина
     message1 = create_message("OneWordStore")
     await process_edit_store_selection(message1, state)
     assert await state.get_state() == EditStoreStates.waiting_field
-    
+
     # Шаг 2: Удаление магазина
     message2 = create_message("Удалить магазин")
-    with patch('app.services.store_service.StoreService.delete_store', return_value=None) as mock_del:
+    with patch(
+        "app.services.store_service.StoreService.delete_store", return_value=None
+    ) as mock_del:
         await process_edit_store_field(message2, state)
-    
+
     mock_del.assert_called_once_with(store)
     assert await state.get_state() is None
 
@@ -244,7 +272,7 @@ async def test_store_delete_flow(create_message, state, session_patch):
 async def test_manager_single_word_validation(create_message, state, session_patch):
     """Тест проверки, что имя и фамилия - одно слово каждое"""
     user_svc = UserService(session_patch)
-    
+
     with pytest.raises(ValueError):
         await user_svc.get_or_create("John Paul", "Doe", "manager")
 

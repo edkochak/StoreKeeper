@@ -1,10 +1,13 @@
 import pytest
 import datetime
-from app.utils.validators import (validate_revenue_amount, 
-                                 validate_date_format, 
-                                 is_valid_store_name)
+from app.utils.validators import (
+    validate_revenue_amount,
+    validate_date_format,
+    is_valid_store_name,
+)
 
 # Предполагается наличие модуля с валидаторами, иначе создайте его
+
 
 def test_revenue_amount_validation():
     """Тест валидации суммы выручки"""
@@ -13,7 +16,7 @@ def test_revenue_amount_validation():
     assert validate_revenue_amount("100.50") == 100.5
     assert validate_revenue_amount("100,50") == 100.5
     assert validate_revenue_amount("1000000") == 1000000.0
-    
+
     # Недопустимые суммы
     with pytest.raises(ValueError):
         validate_revenue_amount("сто рублей")
@@ -23,7 +26,7 @@ def test_revenue_amount_validation():
         validate_revenue_amount("")  # пустая строка
     with pytest.raises(ValueError):
         validate_revenue_amount("100.50.25")  # некорректный формат
-        
+
 
 def test_date_format_validation():
     """Тест валидации формата даты"""
@@ -31,7 +34,7 @@ def test_date_format_validation():
     assert validate_date_format("01.05.2023") == datetime.date(2023, 5, 1)
     assert validate_date_format("01/05/2023") == datetime.date(2023, 5, 1)
     assert validate_date_format("2023-05-01") == datetime.date(2023, 5, 1)
-    
+
     # Недопустимые форматы
     with pytest.raises(ValueError):
         validate_date_format("01-05-23")  # неполный год
@@ -50,7 +53,7 @@ def test_store_name_validation():
     assert is_valid_store_name("ГУМ")
     assert is_valid_store_name("Торговый центр 'Галерея'")
     assert is_valid_store_name("Магазин на ул. Ленина, 10")
-    
+
     # Недопустимые названия
     assert not is_valid_store_name("")  # пустая строка
     assert not is_valid_store_name("М" * 101)  # слишком длинное название

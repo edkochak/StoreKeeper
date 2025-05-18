@@ -3,7 +3,13 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from app.core.config import ADMIN_CHAT_IDS
-from app.core.states import AssignStates, CreateStoreStates, CreateManagerStates, EditStoreStates, EditManagerStates
+from app.core.states import (
+    AssignStates,
+    CreateStoreStates,
+    CreateManagerStates,
+    EditStoreStates,
+    EditManagerStates,
+)
 from app.core.database import get_session
 from app.services.store_service import StoreService
 from app.services.user_service import UserService
@@ -468,7 +474,9 @@ async def process_manager_store(message: types.Message, state: FSMContext):
 async def cmd_edit_store(message: types.Message, state: FSMContext):
     """Редактирование существующего магазина"""
     if message.chat.id not in ADMIN_CHAT_IDS:
-        await message.answer("У вас нет прав администратора для выполнения этой команды.")
+        await message.answer(
+            "У вас нет прав администратора для выполнения этой команды."
+        )
         return
 
     async with get_session() as session:
@@ -533,11 +541,16 @@ async def process_edit_store_field(message: types.Message, state: FSMContext):
 
     if field == "Изменить название":
         await state.update_data(edit_field="name")
-        await message.answer("Введите новое название магазина:", reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(
+            "Введите новое название магазина:", reply_markup=types.ReplyKeyboardRemove()
+        )
         await state.set_state(EditStoreStates.waiting_value)
     elif field == "Изменить план":
         await state.update_data(edit_field="plan")
-        await message.answer("Введите новый план для магазина (число):", reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(
+            "Введите новый план для магазина (число):",
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
         await state.set_state(EditStoreStates.waiting_value)
     else:
         await message.answer("Пожалуйста, выберите один из предложенных вариантов.")
@@ -557,7 +570,10 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
         store = await store_service.get_by_name(store_name)
 
         if not store:
-            await message.answer(f"Магазин '{store_name}' не найден.", reply_markup=get_main_keyboard("admin"))
+            await message.answer(
+                f"Магазин '{store_name}' не найден.",
+                reply_markup=get_main_keyboard("admin"),
+            )
             await state.clear()
             return
 
@@ -570,7 +586,7 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
                     reply_markup=get_main_keyboard("admin"),
                 )
                 return
-            
+
             updated_store = await store_service.update_name(store, new_value)
             await message.answer(
                 f"✅ Название магазина успешно изменено на '{new_value}'.",
@@ -585,7 +601,7 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
                         reply_markup=get_main_keyboard("admin"),
                     )
                     return
-                
+
                 updated_store = await store_service.set_plan(store, new_plan)
                 await message.answer(
                     f"✅ План магазина '{store_name}' обновлён до {new_plan}.",
@@ -605,25 +621,27 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
 async def cmd_edit_manager(message: types.Message, state: FSMContext):
     """Редактирование существующего менеджера"""
     if message.chat.id not in ADMIN_CHAT_IDS:
-        await message.answer("У вас нет прав администратора для выполнения этой команды.")
+        await message.answer(
+            "У вас нет прав администратора для выполнения этой команды."
+        )
         return
 
     async with get_session() as session:
         user_service = UserService(session)
         users = await user_service.get_all_users()
-        
+
         # Фильтруем только менеджеров
         managers = [u for u in users if u.role == "manager"]
-        
+
         if not managers:
             await message.answer("В системе пока нет менеджеров для редактирования.")
             return
-        
+
         kb = ReplyKeyboardBuilder()
         for manager in managers:
             kb.button(text=f"{manager.first_name} {manager.last_name}")
         kb.adjust(1)
-        
+
         await message.answer(
             "Выберите менеджера для редактирования:",
             reply_markup=kb.as_markup(resize_keyboard=True),
@@ -663,7 +681,7 @@ async def process_edit_manager_selection(message: types.Message, state: FSMConte
     await state.set_state(EditManagerStates.waiting_field)
     await message.answer(
         f"Выберите, что хотите изменить для менеджера '{manager_name_raw}':",
-        reply_markup=get_edit_manager_field_keyboard()
+        reply_markup=get_edit_manager_field_keyboard(),
     )
 
 
@@ -673,7 +691,7 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
     field = message.text.strip()
     data = await state.get_data()
     manager_name = data.get("manager_name")
-    
+
     # Изменение: разбираем имя менеджера, считая первое слово именем, а все остальное фамилией
     parts = manager_name.split(" ", 1)  # Разделяем только на две части: имя и остальное
     if len(parts) < 2:
@@ -683,40 +701,50 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
         )
         await state.clear()
         return
-    
+
     first_name, last_name = parts[0], parts[1]
     logger.info(f"Разбор имени менеджера: имя='{first_name}', фамилия='{last_name}'")
-    
+
     if field == "Изменить имя":
-        await state.update_data(edit_field="first_name", first_name=first_name, last_name=last_name)
-        await message.answer("Введите новое имя менеджера:", reply_markup=types.ReplyKeyboardRemove())
+        await state.update_data(
+            edit_field="first_name", first_name=first_name, last_name=last_name
+        )
+        await message.answer(
+            "Введите новое имя менеджера:", reply_markup=types.ReplyKeyboardRemove()
+        )
         await state.set_state(EditManagerStates.waiting_value)
     elif field == "Изменить фамилию":
-        await state.update_data(edit_field="last_name", first_name=first_name, last_name=last_name)
-        await message.answer("Введите новую фамилию менеджера:", reply_markup=types.ReplyKeyboardRemove())
+        await state.update_data(
+            edit_field="last_name", first_name=first_name, last_name=last_name
+        )
+        await message.answer(
+            "Введите новую фамилию менеджера:", reply_markup=types.ReplyKeyboardRemove()
+        )
         await state.set_state(EditManagerStates.waiting_value)
     elif field == "Изменить магазин":
-        await state.update_data(edit_field="store", first_name=first_name, last_name=last_name)
-        
+        await state.update_data(
+            edit_field="store", first_name=first_name, last_name=last_name
+        )
+
         async with get_session() as session:
             stores = await StoreService(session).list_stores()
-            
+
             if not stores:
                 await message.answer(
-                    "В системе нет магазинов для привязки.", 
-                    reply_markup=get_main_keyboard("admin")
+                    "В системе нет магазинов для привязки.",
+                    reply_markup=get_main_keyboard("admin"),
                 )
                 await state.clear()
                 return
-            
+
             kb = ReplyKeyboardBuilder()
             # Добавляем опцию "Без привязки"
             kb.button(text="Без привязки")
-            
+
             for store in stores:
                 kb.button(text=store.name)
             kb.adjust(2)
-            
+
             await message.answer(
                 "Выберите новый магазин для менеджера (или 'Без привязки'):",
                 reply_markup=kb.as_markup(resize_keyboard=True),
@@ -746,23 +774,23 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
     last_name = data.get("last_name")
     edit_field = data.get("edit_field")
     new_value = message.text.strip()
-    
+
     async with get_session() as session:
         user_service = UserService(session)
-        
+
         # Добавляем логирование для отладки
         logger.info(f"Поиск менеджера: имя='{first_name}', фамилия='{last_name}'")
-        
+
         manager = await user_service.get_by_name(first_name, last_name)
-        
+
         if not manager:
             await message.answer(
-                f"Менеджер '{first_name} {last_name}' не найден. Проверьте правильность имени и фамилии.", 
-                reply_markup=get_main_keyboard("admin")
+                f"Менеджер '{first_name} {last_name}' не найден. Проверьте правильность имени и фамилии.",
+                reply_markup=get_main_keyboard("admin"),
             )
             await state.clear()
             return
-        
+
         if edit_field == "first_name":
             if not new_value:
                 await message.answer(
@@ -770,13 +798,13 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
                     reply_markup=get_main_keyboard("admin"),
                 )
                 return
-            
+
             updated_manager = await user_service.update_first_name(manager, new_value)
             await message.answer(
                 f"✅ Имя менеджера изменено с '{first_name}' на '{new_value}'.",
                 reply_markup=get_main_keyboard("admin"),
             )
-        
+
         elif edit_field == "last_name":
             if not new_value:
                 await message.answer(
@@ -784,13 +812,13 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
                     reply_markup=get_main_keyboard("admin"),
                 )
                 return
-            
+
             updated_manager = await user_service.update_last_name(manager, new_value)
             await message.answer(
                 f"✅ Фамилия менеджера изменена с '{last_name}' на '{new_value}'.",
                 reply_markup=get_main_keyboard("admin"),
             )
-        
+
         elif edit_field == "store":
             if new_value == "Без привязки":
                 updated_manager = await user_service.assign_store(manager, None)
@@ -801,19 +829,19 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
             else:
                 store_service = StoreService(session)
                 store = await store_service.get_by_name(new_value)
-                
+
                 if not store:
                     await message.answer(
-                        f"Магазин '{new_value}' не найден.", 
-                        reply_markup=get_main_keyboard("admin")
+                        f"Магазин '{new_value}' не найден.",
+                        reply_markup=get_main_keyboard("admin"),
                     )
                     await state.clear()
                     return
-                
+
                 updated_manager = await user_service.assign_store(manager, store.id)
                 await message.answer(
                     f"✅ Менеджер '{first_name} {last_name}' теперь привязан к магазину '{new_value}'.",
                     reply_markup=get_main_keyboard("admin"),
                 )
-    
+
     await state.clear()
