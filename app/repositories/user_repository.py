@@ -34,17 +34,24 @@ class UserRepository:
                     func.lower(User.first_name) == func.lower(first_name),
                     func.lower(User.last_name) == func.lower(last_name),
                 )
+            ).options(
+                selectinload(User.store)  # Жадно загружаем связанный магазин
             )
             result = await self.session.execute(query)
-            return result.scalars().first()
+            return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Ошибка при поиске пользователя: {e}")
             # Запасной вариант - ищем по точному совпадению
             query = select(User).where(
-                and_(User.first_name == first_name, User.last_name == last_name)
+                and_(
+                    User.first_name == first_name,
+                    User.last_name == last_name,
+                )
+            ).options(
+                selectinload(User.store)  # Жадно загружаем связанный магазин
             )
             result = await self.session.execute(query)
-            return result.scalars().first()
+            return result.scalar_one_or_none()
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """
