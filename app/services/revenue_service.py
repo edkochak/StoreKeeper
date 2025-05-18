@@ -4,7 +4,7 @@ import io
 import calendar
 import pandas as pd
 from typing import Dict, List, Optional, Tuple, Any, Union
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from sqlalchemy.orm import joinedload
 from app.core.database import AsyncSession
 from app.models.revenue import Revenue
@@ -325,10 +325,10 @@ class RevenueService:
     async def get_status(self, store_id: int) -> Optional[Dict[str, Any]]:
         """
         Получает статус выполнения плана для магазина.
-
+        
         Args:
             store_id: ID магазина
-
+            
         Returns:
             Optional[Dict[str, Any]]: Словарь со статусом или None, если данные не найдены
         """
@@ -336,25 +336,13 @@ class RevenueService:
         query = select(Store).where(Store.id == store_id)
         result = await self.session.execute(query)
         store = result.scalar_one_or_none()
-
+        
         if not store:
             return None
-
-        # Получаем суммарную выручку за текущий месяц
-        now = datetime.datetime.now()
-        first_day = datetime.date(now.year, now.month, 1)
-        last_day = datetime.date(
-            now.year, now.month, calendar.monthrange(now.year, now.month)[1]
-        )
-
-        query = select(func.sum(Revenue.amount)).where(
-            Revenue.store_id == store_id,
-            Revenue.date >= first_day,
-            Revenue.date <= last_day,
-        )
-        result = await self.session.execute(query)
-        total = result.scalar() or 0
-
+        
+        # Получаем суммарную выручку за текущий месяц используя новый метод
+        total = await self.get_month_total(store_id)
+        
         # Получаем последнюю запись о выручке
         query = (
             select(Revenue)
@@ -364,19 +352,58 @@ class RevenueService:
         )
         result = await self.session.execute(query)
         last_revenue = result.scalar_one_or_none()
-
+        
         # Вычисляем процент выполнения плана
         percent = int((total / store.plan * 100) if store.plan > 0 else 0)
-
+        
         # Формируем результат
-        status = {"total": total, "plan": store.plan, "percent": percent}
-
+        status = {
+            "total": total,
+            "plan": store.plan,
+            "percent": percent
+        }
+        
         # Добавляем информацию о последней выручке, если есть
         if last_revenue:
             status["last_date"] = last_revenue.date.isoformat()
             status["last_amount"] = last_revenue.amount
-
+        
         return status
+
+    async def get_month_total(self, store_id: int, month: Optional[int] = None, year: Optional[int] = None) -> float:
+        """
+        Получает суммарную выручку за указанный месяц и год.
+        
+        Args:
+            store_id: ID магазина
+            month: Номер месяца (1-12), если не указан, используется текущий месяц
+            year: Год, если не указан, используется текущий год
+            
+        Returns:
+            float: Суммарная выручка за месяц
+        """
+        # Если месяц или год не указаны, используем текущие
+        now = datetime.datetime.now()
+        month = month or now.month
+        year = year or now.year
+        
+        # Вычисляем первый и последний день месяца
+        first_day = datetime.date(year, month, 1)
+        last_day = datetime.date(year, month, calendar.monthrange(year, month)[1])
+        
+        # Запрос на сумму выручки за период
+        query = select(func.sum(Revenue.amount)).where(
+            and_(
+                Revenue.store_id == store_id,
+                Revenue.date >= first_day,
+                Revenue.date <= last_day
+            )
+        )
+        
+        result = await self.session.execute(query)
+        total = result.scalar() or 0.0
+        
+        return total
 
     async def _get_revenue_for_report(self) -> List[Dict[str, Any]]:
         """
@@ -385,25 +412,19 @@ class RevenueService:
         Returns:
             List[Dict[str, Any]]: Список словарей с данными о выручке
         """
-        # Запрос к базе данных для получения всех записей о выручке
         query = select(Revenue).join(Store, Revenue.store_id == Store.id)
         result = await self.session.execute(query)
         revenues = result.scalars().all()
 
-        # Преобразуем результаты в нужный формат
         data = []
         for rev in revenues:
             store = await self._get_store_by_id(rev.store_id)
             data.append(
                 {
                     "store_name": store.name if store else f"Магазин ID:{rev.store_id}",
-                    "date": (
-                        rev.date.isoformat()
-                        if isinstance(rev.date, datetime.date)
-                        else rev.date
-                    ),
+                    "date": rev.date.isoformat() if isinstance(rev.date, datetime.date) else rev.date,
                     "amount": rev.amount,
-                    "plan": store.plan if store else 0.0,
+                    "plan": store.plan if store else None,
                 }
             )
 
@@ -411,12 +432,11 @@ class RevenueService:
 
     async def _get_revenue_stats(self) -> List[Dict[str, Any]]:
         """
-        Получает статистику выручки по магазинам.
+        Получает статистику по выручке для всех магазинов.
 
         Returns:
             List[Dict[str, Any]]: Список словарей со статистикой выручки
         """
-        # Запрос для получения всех магазинов
         query = select(Store)
         result = await self.session.execute(query)
         stores = result.scalars().all()
