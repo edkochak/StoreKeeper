@@ -26,8 +26,8 @@ class RevenueRepository:
         result = await self.session.execute(
             select(Revenue)
             .options(
-                selectinload(Revenue.manager),  # жадно подгружаем менеджера
-                selectinload(Revenue.store),  # жадно подгружаем магазин
+                selectinload(Revenue.manager),
+                selectinload(Revenue.store),
             )
             .filter_by(store_id=store_id)
         )
@@ -36,8 +36,8 @@ class RevenueRepository:
     async def get_all(self) -> List[Revenue]:
         result = await self.session.execute(
             select(Revenue).options(
-                selectinload(Revenue.manager),  # жадно подгружаем менеджера
-                selectinload(Revenue.store),  # жадно подгружаем магазин
+                selectinload(Revenue.manager),
+                selectinload(Revenue.store),
             )
         )
         return result.scalars().all()
@@ -54,7 +54,7 @@ class RevenueRepository:
 
         result = await self.session.execute(query)
         total = result.scalar()
-        return total or 0.0  # Возвращаем 0, если нет данных
+        return total or 0.0
 
     async def get_by_store_and_date(self, store_id: int, date_: date) -> List[Revenue]:
         """Получить все записи выручки по магазину и дате"""

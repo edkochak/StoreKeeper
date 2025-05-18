@@ -17,7 +17,7 @@ class UserService:
     async def get_or_create(
         self, first_name: str, last_name: str, role: str, store_id: Optional[int] = None
     ) -> User:
-        # Валидация: оба поля — одно слово каждое
+
         if " " in first_name.strip() or " " in last_name.strip():
             raise ValueError("Имя и фамилия должны состоять из одного слова каждая.")
         user = await self.repo.get_by_full_name(first_name, last_name)
@@ -27,7 +27,9 @@ class UserService:
 
     async def get_by_name(self, first_name: str, last_name: str) -> Optional[User]:
         """Получить пользователя по имени и фамилии"""
-        logger.info(f"Поиск пользователя по имени и фамилии: {first_name} {last_name}")
+        logger.info(
+            f"Поиск пользователя по имени и фамилии: {first_name } {last_name }"
+        )
         return await self.repo.get_by_name(first_name, last_name)
 
     async def get_by_name_with_store(

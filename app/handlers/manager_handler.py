@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @router.message(Command("revenue"))
 async def cmd_revenue(message: types.Message, state: FSMContext):
     """Команда для ввода выручки"""
-    # Получаем данные о пользователе
+
     data = await state.get_data()
     user_id = data.get("user_id")
 
@@ -30,7 +30,6 @@ async def cmd_revenue(message: types.Message, state: FSMContext):
         await message.answer("Пожалуйста, сначала авторизуйтесь через команду /start")
         return
 
-    # Получаем пользователя из базы
     async with get_session() as session:
         user_service = UserService(session)
         user = await user_service.get_by_id(user_id)
@@ -47,14 +46,13 @@ async def cmd_revenue(message: types.Message, state: FSMContext):
             )
             return
 
-    # Создаем клавиатуру с выбором дат (сегодня и предыдущие 7 дней)
     today = datetime.date.today()
     dates = [today - datetime.timedelta(days=i) for i in range(8)]
 
     kb = ReplyKeyboardBuilder()
     for date_obj in dates:
         kb.button(text=date_obj.strftime("%d.%m.%Y"))
-    kb.adjust(2)  # По 2 кнопки в строке
+    kb.adjust(2)
 
     await message.answer(
         "Выберите дату для ввода выручки:",
@@ -69,10 +67,9 @@ async def process_revenue_date(message: types.Message, state: FSMContext):
     date_str = message.text.strip()
 
     try:
-        # Парсим дату
+
         date_obj = datetime.datetime.strptime(date_str, "%d.%m.%Y").date()
 
-        # Проверяем, что дата не из будущего
         today = datetime.date.today()
         if date_obj > today:
             await message.answer(
@@ -80,10 +77,8 @@ async def process_revenue_date(message: types.Message, state: FSMContext):
             )
             return
 
-        # Сохраняем дату в состоянии
         await state.update_data(selected_date=date_obj.isoformat())
 
-        # Получаем пользователя и его магазин
         data = await state.get_data()
         user_id = data.get("user_id")
 
@@ -110,16 +105,14 @@ async def process_revenue_date(message: types.Message, state: FSMContext):
                 await state.clear()
                 return
 
-            # Проверяем, есть ли уже выручка за эту дату
             revenue_service = RevenueService(session)
             existing_revenue = await revenue_service.get_revenue(
                 store.id, date_obj.isoformat()
             )
 
-            # Формируем сообщение с запросом ввода выручки
-            message_text = f'Введите выручку за {format_date_for_display(date_obj)} для магазина "{store.name}":'
+            message_text = f'Введите выручку за {format_date_for_display (date_obj )} для магазина "{store .name }":'
             if existing_revenue:
-                message_text += f"\n\nУже введена выручка: {existing_revenue.amount}. Новое значение заменит старое."
+                message_text += f"\n\nУже введена выручка: {existing_revenue .amount }. Новое значение заменит старое."
 
             await message.answer(
                 message_text,
@@ -139,10 +132,9 @@ async def process_revenue_amount(message: types.Message, state: FSMContext):
     amount_str = message.text.strip()
 
     try:
-        # Валидируем сумму
+
         amount = validate_revenue_amount(amount_str)
 
-        # Получаем данные из состояния
         data = await state.get_data()
         date_str = data.get("selected_date")
         user_id = data.get("user_id")
@@ -173,24 +165,25 @@ async def process_revenue_amount(message: types.Message, state: FSMContext):
             revenue_service = RevenueService(session)
             revenue = await revenue_service.add_revenue(store.id, date_str, amount)
 
-            # Форматируем дату для отображения
             date_obj = datetime.date.fromisoformat(date_str)
             formatted_date = format_date_for_display(date_obj)
 
             await message.answer(
-                f'✓ Выручка {amount} для магазина "{store.name}" за {formatted_date} успешно сохранена.',
+                f'✓ Выручка {amount } для магазина "{store .name }" за {formatted_date } успешно сохранена.',
                 reply_markup=get_main_keyboard("manager"),
             )
             await state.clear()
 
     except ValueError as e:
-        await message.answer(f"Ошибка: {str(e)}. Пожалуйста, введите корректную сумму.")
+        await message.answer(
+            f"Ошибка: {str (e )}. Пожалуйста, введите корректную сумму."
+        )
 
 
 @router.message(Command("status"))
 async def cmd_status(message: types.Message, state: FSMContext):
     """Команда для проверки статуса выполнения плана"""
-    # Получаем данные о пользователе
+
     data = await state.get_data()
     user_id = data.get("user_id")
 
@@ -198,7 +191,6 @@ async def cmd_status(message: types.Message, state: FSMContext):
         await message.answer("Пожалуйста, сначала авторизуйтесь через команду /start")
         return
 
-    # Получаем пользователя из базы
     async with get_session() as session:
         user_service = UserService(session)
         user = await user_service.get_by_id(user_id)
@@ -229,8 +221,8 @@ async def cmd_status(message: types.Message, state: FSMContext):
 
         if not stats:
             await message.answer(
-                f'📊 Статус выполнения плана для магазина "{store.name}":\n\n'
-                f"План на месяц: {store.plan}\n"
+                f'📊 Статус выполнения плана для магазина "{store .name }":\n\n'
+                f"План на месяц: {store .plan }\n"
                 f"Текущая выручка: 0\n"
                 f"Процент выполнения: 0%\n\n"
                 f"Нет данных о выручке за текущий месяц.",
@@ -238,20 +230,18 @@ async def cmd_status(message: types.Message, state: FSMContext):
             )
             return
 
-        # Формируем сообщение со статусом
         message_text = (
-            f'📊 Статус выполнения плана для магазина "{store.name}":\n\n'
-            f"План на месяц: {stats['plan']}\n"
-            f"Текущая выручка: {stats['total']}\n"
-            f"Процент выполнения: {stats['percent']}%\n"
+            f'📊 Статус выполнения плана для магазина "{store .name }":\n\n'
+            f"План на месяц: {stats ['plan']}\n"
+            f"Текущая выручка: {stats ['total']}\n"
+            f"Процент выполнения: {stats ['percent']}%\n"
         )
 
-        # Если есть информация о последней выручке, добавляем её
         if stats.get("last_date") and stats.get("last_amount"):
             last_date = datetime.date.fromisoformat(stats["last_date"])
             formatted_date = format_date_for_display(last_date)
             message_text += (
-                f"\nПоследний ввод: {stats['last_amount']} ({formatted_date})"
+                f"\nПоследний ввод: {stats ['last_amount']} ({formatted_date })"
             )
 
         await message.answer(

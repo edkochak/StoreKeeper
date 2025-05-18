@@ -16,10 +16,8 @@ def get_month_range(date_obj: datetime.date) -> Tuple[datetime.date, datetime.da
     year = date_obj.year
     month = date_obj.month
 
-    # Первый день месяца
     first_day = datetime.date(year, month, 1)
 
-    # Последний день месяца
     _, last_day_of_month = calendar.monthrange(year, month)
     last_day = datetime.date(year, month, last_day_of_month)
 
@@ -39,19 +37,14 @@ def get_quarter_range(date_obj: datetime.date) -> Tuple[datetime.date, datetime.
     year = date_obj.year
     month = date_obj.month
 
-    # Определяем квартал
     quarter = (month - 1) // 3 + 1
 
-    # Первый месяц квартала
     first_month = (quarter - 1) * 3 + 1
 
-    # Первый день квартала
     first_day = datetime.date(year, first_month, 1)
 
-    # Последний месяц квартала
     last_month = first_month + 2
 
-    # Последний день квартала
     _, last_day_of_month = calendar.monthrange(year, last_month)
     last_day = datetime.date(year, last_month, last_day_of_month)
 
@@ -68,7 +61,7 @@ def get_week_range(date_obj: datetime.date) -> Tuple[datetime.date, datetime.dat
     Returns:
         Tuple[datetime.date, datetime.date]: Кортеж из первого и последнего дня недели
     """
-    # Находим понедельник (0 - понедельник, 6 - воскресенье)
+
     weekday = date_obj.weekday()
     monday = date_obj - datetime.timedelta(days=weekday)
     sunday = monday + datetime.timedelta(days=6)
@@ -87,7 +80,7 @@ def format_date_for_display(date_obj: datetime.date, format_type: str = "full") 
     Returns:
         str: Отформатированная дата
     """
-    # Словарь месяцев на русском
+
     month_names = {
         1: "января",
         2: "февраля",
@@ -103,7 +96,6 @@ def format_date_for_display(date_obj: datetime.date, format_type: str = "full") 
         12: "декабря",
     }
 
-    # Словарь месяцев на русском (именительный падеж)
     month_names_nominative = {
         1: "январь",
         2: "февраль",
@@ -120,19 +112,19 @@ def format_date_for_display(date_obj: datetime.date, format_type: str = "full") 
     }
 
     if format_type == "full":
-        # Пример: "15 мая 2023"
-        return f"{date_obj.day} {month_names[date_obj.month]} {date_obj.year}"
+
+        return f"{date_obj .day } {month_names [date_obj .month ]} {date_obj .year }"
     elif format_type == "short":
-        # Пример: "15.05.2023"
+
         return date_obj.strftime("%d.%m.%Y")
     elif format_type == "day_month":
-        # Пример: "15 мая"
-        return f"{date_obj.day} {month_names[date_obj.month]}"
+
+        return f"{date_obj .day } {month_names [date_obj .month ]}"
     elif format_type == "month_year":
-        # Пример: "май 2023"
-        return f"{month_names_nominative[date_obj.month]} {date_obj.year}"
+
+        return f"{month_names_nominative [date_obj .month ]} {date_obj .year }"
     else:
-        raise ValueError(f"Unknown format type: {format_type}")
+        raise ValueError(f"Unknown format type: {format_type }")
 
 
 def validate_date_format(date_str: str) -> datetime.date:
@@ -158,5 +150,5 @@ def validate_date_format(date_str: str) -> datetime.date:
             continue
 
     raise ValueError(
-        f"Неверный формат даты: {date_str}. Поддерживаемые форматы: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD"
+        f"Неверный формат даты: {date_str }. Поддерживаемые форматы: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD"
     )

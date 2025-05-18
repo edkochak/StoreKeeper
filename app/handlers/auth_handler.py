@@ -14,39 +14,33 @@ logger = logging.getLogger(__name__)
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
-    # Проверяем, является ли пользователь администратором
+
     if message.chat.id in ADMIN_CHAT_IDS:
-        # Для админа автоматическая авторизация
-        admin_index = (
-            ADMIN_CHAT_IDS.index(message.chat.id) + 1
-        )  # +1 чтобы начать с admin1
-        first_name = f"admin{admin_index}"
-        last_name = "Admin"  # Фамилия не используется, но нужна для модели
+
+        admin_index = ADMIN_CHAT_IDS.index(message.chat.id) + 1
+        first_name = f"admin{admin_index }"
+        last_name = "Admin"
 
         async with get_session() as session:
             user_service = UserService(session)
 
-            # Проверяем существует ли уже такой админ
             user = await user_service.get_by_name(first_name, last_name)
             if not user:
-                # Создаем нового админа
-                user = await user_service.get_or_create(first_name, last_name, "admin")
-                logger.info(f"Автоматически создан администратор: {first_name}")
 
-        # Сохраняем в контекст данные пользователя
+                user = await user_service.get_or_create(first_name, last_name, "admin")
+                logger.info(f"Автоматически создан администратор: {first_name }")
+
         await state.update_data(
             user_id=user.id, first_name=first_name, last_name=last_name, role="admin"
         )
 
-        # Отправляем приветствие и меню для админа
         await message.answer(
-            f"✅ Вы авторизованы как администратор {first_name}.",
+            f"✅ Вы авторизованы как администратор {first_name }.",
             reply_markup=get_main_keyboard("admin"),
         )
         await message.answer(get_menu_text("admin"), parse_mode="HTML")
         return
 
-    # Для обычных пользователей запрашиваем авторизацию как раньше
     await message.answer(
         "Здравствуйте! Пожалуйста, введите ваше имя и фамилию через пробел для авторизации:"
     )
@@ -55,11 +49,10 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @router.message(Command("help"))
 async def cmd_help(message: types.Message, state: FSMContext):
-    # Получаем данные пользователя из контекста
+
     data = await state.get_data()
     role = data.get("role")
 
-    # Отправляем меню в соответствии с ролью
     await message.answer(
         get_menu_text(role), parse_mode="HTML", reply_markup=get_main_keyboard(role)
     )
@@ -81,12 +74,11 @@ async def process_name(message: types.Message, state: FSMContext):
 
         if not user:
             await message.answer(
-                f"❌ Авторизация не удалась: пользователь {first_name} {last_name} не найден в системе."
+                f"❌ Авторизация не удалась: пользователь {first_name } {last_name } не найден в системе."
             )
             await state.clear()
             return
 
-        # Проверка role соответствует
         if user.role != role:
             await message.answer(
                 f"❌ Авторизация не удалась: несоответствие роли пользователя."
@@ -94,19 +86,16 @@ async def process_name(message: types.Message, state: FSMContext):
             await state.clear()
             return
 
-    # Успешная авторизация
     logger.info("Пользователь авторизован: %s %s (%s)", first_name, last_name, role)
     await state.update_data(
         user_id=user.id, first_name=first_name, last_name=last_name, role=role
     )
 
-    # Отправляем приветствие и меню
-    store_info = f", ваш магазин: {user.store.name}" if user.store_id else ""
+    store_info = f", ваш магазин: {user .store .name }" if user.store_id else ""
     await message.answer(
-        f"✅ Вы успешно авторизованы как {role} {first_name} {last_name}{store_info}.",
+        f"✅ Вы успешно авторизованы как {role } {first_name } {last_name }{store_info }.",
         reply_markup=get_main_keyboard(role),
     )
     await message.answer(get_menu_text(role), parse_mode="HTML")
 
-    # Завершаем FSM, очищаем состояние, сохраняем data
     await state.set_state(None)

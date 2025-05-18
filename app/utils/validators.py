@@ -22,19 +22,15 @@ def validate_revenue_amount(amount_str: str) -> float:
     if not amount_str:
         raise ValueError("Сумма выручки не может быть пустой")
 
-    # Заменяем запятую на точку для корректного парсинга
     amount_str = amount_str.replace(",", ".")
 
-    # Проверяем, что строка содержит число
     if not re.match(r"^[0-9]+(\.[0-9]+)?$", amount_str):
         raise ValueError(
-            f"Неверный формат суммы: {amount_str}. Используйте только цифры и точку/запятую."
+            f"Неверный формат суммы: {amount_str }. Используйте только цифры и точку/запятую."
         )
 
-    # Преобразуем в число
     amount = float(amount_str)
 
-    # Проверяем, что сумма не отрицательная
     if amount < 0:
         raise ValueError("Сумма выручки не может быть отрицательной")
 
@@ -73,11 +69,9 @@ def is_valid_store_name(name: str) -> bool:
     if not name:
         return False
 
-    # Проверка длины (не более 100 символов)
     if len(name) > 100:
         return False
 
-    # Проверка на SQL-инъекции (простая проверка)
     dangerous_patterns = [
         r"--",
         r"\/\*",
@@ -97,7 +91,7 @@ def is_valid_store_name(name: str) -> bool:
     for pattern in dangerous_patterns:
         if re.search(pattern, name, re.IGNORECASE):
             logger.warning(
-                f"Suspicious store name detected (possible SQL injection): {name}"
+                f"Suspicious store name detected (possible SQL injection): {name }"
             )
             return False
 
@@ -128,12 +122,11 @@ def is_valid_phone(phone: str) -> bool:
     Returns:
         bool: True если номер телефона допустим, иначе False
     """
-    # Очищаем телефон от лишних символов
+
     clean_phone = re.sub(r"[^\d+]", "", phone)
 
-    # Проверяем разные форматы телефонов
-    russian_pattern = r"^\+?7[0-9]{10}$"  # +7XXXXXXXXXX или 7XXXXXXXXXX
-    generic_pattern = r"^\+?[0-9]{10,15}$"  # +XXXXXXXXXXX или XXXXXXXXXXX (10-15 цифр)
+    russian_pattern = r"^\+?7[0-9]{10}$"
+    generic_pattern = r"^\+?[0-9]{10,15}$"
 
     return bool(
         re.match(russian_pattern, clean_phone) or re.match(generic_pattern, clean_phone)
@@ -153,8 +146,6 @@ def sanitize_input(input_str: str) -> str:
     if not input_str:
         return ""
 
-    # Удаляем потенциально опасные символы
     sanitized = re.sub(r'[<>\'";]', "", input_str)
 
-    # Ограничиваем длину
     return sanitized[:1000]

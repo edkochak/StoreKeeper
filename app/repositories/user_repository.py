@@ -1,9 +1,9 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload  # <-- импортируем
-from sqlalchemy.sql import and_  # <-- импортируем
-from sqlalchemy.sql import func  # <-- импортируем
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import and_
+from sqlalchemy.sql import func
 from app.models.user import User
 import logging
 
@@ -18,8 +18,8 @@ class UserRepository:
         result = await self.session.execute(
             select(User)
             .options(
-                selectinload(User.store),  # жадно подгружаем магазин
-                selectinload(User.revenues),  # жадно подгружаем выручки
+                selectinload(User.store),
+                selectinload(User.revenues),
             )
             .filter_by(first_name=first_name, last_name=last_name)
         )
@@ -27,7 +27,7 @@ class UserRepository:
 
     async def get_by_name(self, first_name: str, last_name: str) -> Optional[User]:
         """Получить пользователя по имени и фамилии"""
-        # Используем ILIKE для регистронезависимого поиска (PostgreSQL)
+
         try:
             query = (
                 select(User)
@@ -37,13 +37,13 @@ class UserRepository:
                         func.lower(User.last_name) == func.lower(last_name),
                     )
                 )
-                .options(selectinload(User.store))  # Жадно загружаем связанный магазин
+                .options(selectinload(User.store))
             )
             result = await self.session.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.error(f"Ошибка при поиске пользователя: {e}")
-            # Запасной вариант - ищем по точному совпадению
+            logger.error(f"Ошибка при поиске пользователя: {e }")
+
             query = (
                 select(User)
                 .where(
@@ -52,7 +52,7 @@ class UserRepository:
                         User.last_name == last_name,
                     )
                 )
-                .options(selectinload(User.store))  # Жадно загружаем связанный магазин
+                .options(selectinload(User.store))
             )
             result = await self.session.execute(query)
             return result.scalar_one_or_none()
@@ -85,8 +85,8 @@ class UserRepository:
     async def get_all(self) -> List[User]:
         result = await self.session.execute(
             select(User).options(
-                selectinload(User.store),  # жадно подгружаем магазин
-                selectinload(User.revenues),  # жадно подгружаем выручки
+                selectinload(User.store),
+                selectinload(User.revenues),
             )
         )
         return result.scalars().all()

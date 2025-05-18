@@ -9,10 +9,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-    role = Column(String, nullable=False)  # 'admin' или 'manager'
-    store_id = Column(
-        Integer, ForeignKey("stores.id"), nullable=True
-    )  # привязка к магазину (только для менеджеров)
+    role = Column(String, nullable=False)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
 
-    store = relationship("Store", back_populates="managers")  # связь с магазином
+    store = relationship("Store", back_populates="managers")
     revenues = relationship("Revenue", back_populates="manager")

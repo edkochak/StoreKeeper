@@ -6,7 +6,7 @@ class AuthStates(StatesGroup):
 
 
 class RevenueStates(StatesGroup):
-    waiting_date = State()  # Новое состояние для выбора даты
+    waiting_date = State()
     waiting_store = State()
     waiting_amount = State()
 
@@ -21,7 +21,6 @@ class AssignStates(StatesGroup):
     waiting_store = State()
 
 
-# Добавляем новые состояния
 class CreateStoreStates(StatesGroup):
     waiting_name = State()
     waiting_plan = State()

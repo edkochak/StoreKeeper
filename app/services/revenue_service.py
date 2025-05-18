@@ -29,7 +29,7 @@ class RevenueService:
         Returns:
             tuple: RGBA цвет для матрешки
         """
-        # Используем единый цвет для всех матрешек - стальной синий
+
         return (70, 130, 180, 200)
 
     async def export_report(self) -> Tuple[bytes, Dict[str, bytes]]:
@@ -39,24 +39,19 @@ class RevenueService:
         Returns:
             Tuple[bytes, Dict[str, bytes]]: Кортеж из байтов файла Excel и словаря изображений
         """
-        # Получаем данные для отчета
+
         data = await self._get_revenue_for_report()
 
-        # Создаем DataFrame из данных
         df = pd.DataFrame(data)
 
-        # Форматируем данные
         if not df.empty:
-            # Преобразуем строковые даты в datetime
+
             df["date"] = pd.to_datetime(df["date"])
 
-            # Сортируем по магазину и дате
             df = df.sort_values(["store_name", "date"])
 
-        # Создаем буфер для Excel файла
         excel_buffer = io.BytesIO()
 
-        # Определяем, вызывается ли этот метод из теста test_revenue_service
         use_english_names = False
         try:
             import inspect
@@ -70,42 +65,37 @@ class RevenueService:
         except:
             pass
 
-        # Создаем объект Excel Writer
         with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-            # Определяем имена листов (русские или английские)
+
             sheet1_name = "Details" if use_english_names else "Выручка по дням"
             sheet2_name = "Summary" if use_english_names else "Сводка по магазинам"
 
-            # Первый лист: данные по дням
             if df.empty:
                 pd.DataFrame(columns=["Магазин", "Дата", "Выручка", "План"]).to_excel(
                     writer, sheet_name=sheet1_name, index=False
                 )
             else:
-                # Создаем копию с переименованными колонками
+
                 daily_df = df.copy()
                 daily_df.columns = ["Магазин", "Дата", "Выручка", "План"]
                 daily_df.to_excel(writer, sheet_name=sheet1_name, index=False)
 
-            # Второй лист: сводка по магазинам
             if df.empty:
                 pd.DataFrame(
                     columns=["Магазин", "Общая выручка", "План", "% выполнения"]
                 ).to_excel(writer, sheet_name=sheet2_name, index=False)
             else:
-                # Группируем данные по магазинам
+
                 summary_df = (
                     df.groupby("store_name")
                     .agg({"amount": "sum", "plan": "first"})
                     .reset_index()
                 )
 
-                # Добавляем колонку с процентом выполнения плана
                 summary_df["percent"] = (
                     summary_df["amount"] / summary_df["plan"] * 100
                 ).round(1)
 
-                # Переименовываем колонки и записываем на лист
                 summary_df.columns = [
                     "Магазин",
                     "Общая выручка",
@@ -114,11 +104,9 @@ class RevenueService:
                 ]
                 summary_df.to_excel(writer, sheet_name=sheet2_name, index=False)
 
-        # Получаем байты файла
         excel_buffer.seek(0)
         excel_bytes = excel_buffer.getvalue()
 
-        # Генерируем графики
         image_dict = {}
 
         if not df.empty:
@@ -126,17 +114,14 @@ class RevenueService:
                 import matplotlib.pyplot as plt
                 import matplotlib
 
-                matplotlib.use("Agg")  # Используем не-интерактивный бэкенд
+                matplotlib.use("Agg")
 
-                # Получаем уникальные магазины
                 stores = df["store_name"].unique()
 
-                # Для каждого магазина генерируем свой график
                 for store_name in stores:
-                    # Фильтруем данные для текущего магазина
+
                     store_data = df[df["store_name"] == store_name]
 
-                    # Создаем график выручки по дням для этого магазина
                     plt.figure(figsize=(10, 6))
                     plt.plot(
                         store_data["date"],
@@ -146,22 +131,20 @@ class RevenueService:
                     )
                     plt.xlabel("Дата", fontsize=14)
                     plt.ylabel("Выручка", fontsize=14)
-                    plt.title(f'Динамика выручки магазина "{store_name}"', fontsize=16)
+                    plt.title(f'Динамика выручки магазина "{store_name }"', fontsize=16)
                     plt.xticks(fontsize=12)
                     plt.yticks(fontsize=12)
                     plt.grid(True)
                     plt.tight_layout()
 
-                    # Сохраняем в байтовый поток
                     img_buffer = io.BytesIO()
                     plt.savefig(img_buffer, format="png")
                     img_buffer.seek(0)
                     image_dict[store_name] = img_buffer.getvalue()
                     plt.close()
 
-                # Если это тестовый режим и нет данных для Store1, добавляем заглушку
                 if use_english_names and "Store1" not in image_dict:
-                    # Создаем пустое изображение как заглушку
+
                     plt.figure(figsize=(10, 6))
                     plt.text(
                         0.5, 0.5, "Нет данных", ha="center", va="center", fontsize=14
@@ -174,7 +157,7 @@ class RevenueService:
                     plt.close()
 
             except Exception as e:
-                logger.error(f"Error generating charts: {e}")
+                logger.error(f"Error generating charts: {e }")
 
         return excel_bytes, image_dict
 
@@ -185,34 +168,30 @@ class RevenueService:
         Returns:
             List[Dict[str, Any]]: Данные для генерации матрешек
         """
-        # Получаем статистику по магазинам
+
         stats = await self._get_revenue_stats()
 
         result = []
         for stat in stats:
-            # Вычисляем процент выполнения плана
+
             plan = stat["plan"]
             total = stat["total"]
 
-            # Избегаем деления на ноль
             if plan and plan > 0:
                 fill_percent = int((total / plan) * 100)
             else:
                 fill_percent = 0
 
-            # Форматируем числа для отображения
-            total_formatted = f"{int(total):,}".replace(",", " ")
-            plan_formatted = f"{int(plan):,}".replace(",", " ")
+            total_formatted = f"{int (total ):,}".replace(",", " ")
+            plan_formatted = f"{int (plan ):,}".replace(",", " ")
 
-            # Форматируем последнюю выручку и дату
             last_amount = stat["last_revenue"]["amount"]
             last_date = stat["last_revenue"]["date"]
 
-            last_amount_formatted = f"{int(last_amount):,}".replace(",", " ")
+            last_amount_formatted = f"{int (last_amount ):,}".replace(",", " ")
 
-            # Форматируем дату, если она не None
             if last_date:
-                # Преобразуем ISO формат в ДД.ММ.ГГ
+
                 try:
                     date_obj = datetime.date.fromisoformat(last_date)
                     last_date_formatted = date_obj.strftime("%d.%m.%y")
@@ -221,7 +200,6 @@ class RevenueService:
             else:
                 last_date_formatted = "Н/Д"
 
-            # Добавляем данные в результат
             result.append(
                 {
                     "title": stat["store_name"],
@@ -247,24 +225,23 @@ class RevenueService:
         Returns:
             Revenue: Созданный или обновленный объект выручки
         """
-        # Преобразуем строку даты в объект date
+
         if isinstance(date_str, str):
             date_obj = datetime.date.fromisoformat(date_str)
         else:
             date_obj = date_str
 
-        # Проверяем, есть ли уже запись о выручке за эту дату
         existing_revenue = await self.get_revenue(store_id, date_str)
 
         if existing_revenue:
-            # Обновляем существующую запись
+
             existing_revenue.amount = amount
             self.session.add(existing_revenue)
             await self.session.commit()
             await self.session.refresh(existing_revenue)
             return existing_revenue
         else:
-            # Создаем новую запись
+
             revenue = Revenue(store_id=store_id, date=date_obj, amount=amount)
             self.session.add(revenue)
             await self.session.commit()
@@ -286,8 +263,7 @@ class RevenueService:
         Returns:
             Revenue: Созданный объект выручки
         """
-        # Создаем запись о выручке без проверки на существование
-        # для совместимости с тестами
+
         revenue = Revenue(
             store_id=store_id, amount=amount, date=date_obj, manager_id=manager_id
         )
@@ -309,13 +285,12 @@ class RevenueService:
         Returns:
             Optional[Revenue]: Объект выручки или None, если запись не найдена
         """
-        # Преобразуем строку даты в объект date, если нужно
+
         if isinstance(date_str, str):
             date_obj = datetime.date.fromisoformat(date_str)
         else:
             date_obj = date_str
 
-        # Выполняем запрос к базе данных
         query = select(Revenue).where(
             Revenue.store_id == store_id, Revenue.date == date_obj
         )
@@ -332,7 +307,7 @@ class RevenueService:
         Returns:
             Optional[Dict[str, Any]]: Словарь со статусом или None, если данные не найдены
         """
-        # Получаем магазин с его планом
+
         query = select(Store).where(Store.id == store_id)
         result = await self.session.execute(query)
         store = result.scalar_one_or_none()
@@ -340,10 +315,8 @@ class RevenueService:
         if not store:
             return None
 
-        # Получаем суммарную выручку за текущий месяц используя новый метод
         total = await self.get_month_total(store_id)
 
-        # Получаем последнюю запись о выручке
         query = (
             select(Revenue)
             .where(Revenue.store_id == store_id)
@@ -353,13 +326,10 @@ class RevenueService:
         result = await self.session.execute(query)
         last_revenue = result.scalar_one_or_none()
 
-        # Вычисляем процент выполнения плана
         percent = int((total / store.plan * 100) if store.plan > 0 else 0)
 
-        # Формируем результат
         status = {"total": total, "plan": store.plan, "percent": percent}
 
-        # Добавляем информацию о последней выручке, если есть
         if last_revenue:
             status["last_date"] = last_revenue.date.isoformat()
             status["last_amount"] = last_revenue.amount
@@ -380,16 +350,14 @@ class RevenueService:
         Returns:
             float: Суммарная выручка за месяц
         """
-        # Если месяц или год не указаны, используем текущие
+
         now = datetime.datetime.now()
         month = month or now.month
         year = year or now.year
 
-        # Вычисляем первый и последний день месяца
         first_day = datetime.date(year, month, 1)
         last_day = datetime.date(year, month, calendar.monthrange(year, month)[1])
 
-        # Запрос на сумму выручки за период
         query = select(func.sum(Revenue.amount)).where(
             and_(
                 Revenue.store_id == store_id,
@@ -419,7 +387,9 @@ class RevenueService:
             store = await self._get_store_by_id(rev.store_id)
             data.append(
                 {
-                    "store_name": store.name if store else f"Магазин ID:{rev.store_id}",
+                    "store_name": (
+                        store.name if store else f"Магазин ID:{rev .store_id }"
+                    ),
                     "date": (
                         rev.date.isoformat()
                         if isinstance(rev.date, datetime.date)
@@ -445,14 +415,13 @@ class RevenueService:
 
         stats = []
         for store in stores:
-            # Получение общей выручки для магазина
+
             total_query = select(func.sum(Revenue.amount)).where(
                 Revenue.store_id == store.id
             )
             total_result = await self.session.execute(total_query)
             total = total_result.scalar() or 0.0
 
-            # Получение последней выручки
             last_query = (
                 select(Revenue)
                 .where(Revenue.store_id == store.id)
@@ -462,7 +431,6 @@ class RevenueService:
             last_result = await self.session.execute(last_query)
             last_revenue = last_result.scalar_one_or_none()
 
-            # Формируем статистику
             stats.append(
                 {
                     "store_id": store.id,

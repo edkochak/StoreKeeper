@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload  # <-- импортируем
+from sqlalchemy.orm import selectinload
 from app.models.store import Store
 from app.models.user import User
 
@@ -11,13 +11,9 @@ class StoreRepository:
         self.session = session
 
     async def get_all(self) -> List[Store]:
-        # жадно подгружаем менеджеров, чтобы не было lazy-load вне сессии
+
         result = await self.session.execute(
-            select(Store).options(
-                selectinload(Store.managers).selectinload(
-                    User.store
-                )  # вложенная загрузка store у менеджеров
-            )
+            select(Store).options(selectinload(Store.managers).selectinload(User.store))
         )
         return result.scalars().all()
 
@@ -25,8 +21,8 @@ class StoreRepository:
         result = await self.session.execute(
             select(Store)
             .options(
-                selectinload(Store.managers),  # жадно загружаем менеджеров
-                selectinload(Store.revenues),  # жадно загружаем выручки
+                selectinload(Store.managers),
+                selectinload(Store.revenues),
             )
             .filter_by(name=name)
         )
@@ -36,8 +32,8 @@ class StoreRepository:
         result = await self.session.execute(
             select(Store)
             .options(
-                selectinload(Store.managers),  # жадно загружаем менеджеров
-                selectinload(Store.revenues),  # жадно загружаем выручки
+                selectinload(Store.managers),
+                selectinload(Store.revenues),
             )
             .filter_by(id=store_id)
         )

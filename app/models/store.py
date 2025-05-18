@@ -8,7 +8,7 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
-    plan = Column(Float, nullable=False, default=0.0)  # индивидуальный план магазина
+    plan = Column(Float, nullable=False, default=0.0)
 
-    revenues = relationship("Revenue", back_populates="store")  # связь с выручкой
-    managers = relationship("User", back_populates="store")  # связь с менеджерами
+    revenues = relationship("Revenue", back_populates="store")
+    managers = relationship("User", back_populates="store")

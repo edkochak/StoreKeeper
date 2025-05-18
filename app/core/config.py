@@ -7,7 +7,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Поддержка нескольких админов через запятую в переменной окружения
+
 admin_ids_str = os.getenv("ADMIN_CHAT_IDS", os.getenv("ADMIN_CHAT_ID", "0"))
 ADMIN_CHAT_IDS = [
     int(chat_id.strip()) for chat_id in admin_ids_str.split(",") if chat_id.strip()
@@ -15,5 +15,5 @@ ADMIN_CHAT_IDS = [
 
 DEFAULT_PLAN = float(os.getenv("DEFAULT_PLAN", "0"))
 
-# Настройки Redis для хранения состояний
+
 REDIS_DSN = os.getenv("REDIS_DSN", "redis://localhost:6379/0")

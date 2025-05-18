@@ -22,11 +22,10 @@ async def cmd_setplan(message: types.Message, state: FSMContext):
     async with get_session() as session:
         stores = await StoreService(session).list_stores()
 
-    # Создаем клавиатуру с использованием ReplyKeyboardBuilder (aiogram v3)
     kb = ReplyKeyboardBuilder()
     for store in stores:
         kb.button(text=store.name)
-    kb.adjust(2)  # По 2 кнопки в ряду
+    kb.adjust(2)
 
     await message.answer(
         "Выберите магазин для установки плана:",
@@ -57,9 +56,8 @@ async def process_plan_value(message: types.Message, state: FSMContext):
         updated = await svc.set_plan(store, plan)
     logger.info("План магазина %s установлен: %.2f", updated.name, updated.plan)
 
-    # Возвращаем клавиатуру меню администратора после завершения
     await message.answer(
-        f"✅ План магазина {updated.name} обновлён до {updated.plan}.",
+        f"✅ План магазина {updated .name } обновлён до {updated .plan }.",
         reply_markup=get_main_keyboard("admin"),
     )
     await state.clear()

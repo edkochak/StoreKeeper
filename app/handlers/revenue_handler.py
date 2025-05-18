@@ -17,23 +17,20 @@ logger = logging.getLogger(__name__)
 
 @router.message(Command("revenue"))
 async def cmd_revenue(message: types.Message, state: FSMContext):
-    # Проверяем авторизацию
+
     user_data = await state.get_data()
     if not user_data.get("user_id"):
         await message.answer("Пожалуйста, сначала авторизуйтесь через /start")
         return
 
-    # Формируем клавиатуру с выбором даты
     kb = ReplyKeyboardBuilder()
     today = date.today()
 
-    # Сегодня и последние 7 дней
     for i in range(8):
         day = today - timedelta(days=i)
         day_str = day.strftime("%d.%m.%Y")
         kb.button(text=day_str)
 
-    # Размещаем по 2 кнопки в ряду
     kb.adjust(2)
 
     await message.answer(
@@ -46,48 +43,41 @@ async def cmd_revenue(message: types.Message, state: FSMContext):
 @router.message(RevenueStates.waiting_date)
 async def process_date(message: types.Message, state: FSMContext):
     try:
-        # Пробуем распарсить дату
+
         selected_date = datetime.strptime(message.text, "%d.%m.%Y").date()
 
-        # Проверка, что дата не из будущего
         if selected_date > date.today():
             await message.answer(
                 "Нельзя вводить выручку за будущие даты. Выберите другую дату:"
             )
             return
 
-        # Сохраняем дату в состояние
         await state.update_data(selected_date=selected_date.isoformat())
 
-        # Получаем данные пользователя
         user_data = await state.get_data()
         user_id = user_data.get("user_id")
 
-        # Получаем информацию о магазине менеджера
         async with get_session() as session:
             user_service = UserService(session)
             user = await user_service.get_by_name(
                 user_data.get("first_name", ""), user_data.get("last_name", "")
             )
 
-            # Если менеджер привязан к магазину
             if user and user.store_id:
-                # Сразу переходим к вводу суммы
+
                 store_service = StoreService(session)
                 store = await store_service.get_by_id(user.store_id)
 
                 if store:
                     await state.update_data(store_id=store.id, store_name=store.name)
                     await message.answer(
-                        f"Введите выручку за {message.text} для магазина {store.name}:"
+                        f"Введите выручку за {message .text } для магазина {store .name }:"
                     )
                     await state.set_state(RevenueStates.waiting_amount)
                     return
 
-            # Если нет привязки к магазину или админ
             stores = await StoreService(session).list_stores()
 
-        # Если нет магазинов или пользователь - админ (может выбирать магазин)
         kb = ReplyKeyboardBuilder()
         for store in stores:
             kb.button(text=store.name)
@@ -127,7 +117,7 @@ async def process_amount(message: types.Message, state: FSMContext):
     user_id = data.get("user_id")
 
     if not selected_date:
-        # Если каким-то образом дата не была сохранена, используем текущую
+
         logger.warning("Дата не найдена в состоянии, используем текущую")
         selected_date = date.today().isoformat()
 
@@ -157,10 +147,10 @@ async def process_amount(message: types.Message, state: FSMContext):
     )
 
     await message.answer(
-        f"✅ Выручка {amount} для магазина {store_name} за {revenue_date.strftime('%d.%m.%Y')} успешно сохранена.",
+        f"✅ Выручка {amount } для магазина {store_name } за {revenue_date .strftime ('%d.%m.%Y')} успешно сохранена.",
         reply_markup=get_main_keyboard(data.get("role")),
     )
-    # Завершаем FSM, очищаем только состояние, сохраняем данные пользователя
+
     await state.set_state(None)
 
 
@@ -193,8 +183,8 @@ async def cmd_status(message: types.Message, state: FSMContext):
             plan_progress = (current_month_total / store.plan) * 100
 
         await message.answer(
-            f"📊 Статус выполнения плана для магазина {store.name}:\n\n"
-            f"План на месяц: {store.plan}\n"
-            f"Текущая выручка: {current_month_total}\n"
-            f"Процент выполнения: {plan_progress:.1f}%"
+            f"📊 Статус выполнения плана для магазина {store .name }:\n\n"
+            f"План на месяц: {store .plan }\n"
+            f"Текущая выручка: {current_month_total }\n"
+            f"Процент выполнения: {plan_progress :.1f}%"
         )

@@ -22,7 +22,6 @@ from app.models.store import Store
 from app.models.user import User
 
 
-# Фикстура для создания фейкового сообщения
 @pytest.fixture
 def create_message():
     def _create_message(text="", chat_id=329008489, from_user_id=329008489):
@@ -30,7 +29,7 @@ def create_message():
         message.text = text
         message.chat = Chat(id=chat_id, type="private")
         message.from_user = TgUser(id=from_user_id, is_bot=False, first_name="Test")
-        # Правильная настройка метода answer для AsyncMock
+
         message.answer = AsyncMock()
         message.answer.return_value = AsyncMock()
         return message
@@ -38,7 +37,6 @@ def create_message():
     return _create_message
 
 
-# Фикстура для создания контекста состояния
 @pytest.fixture
 def state():
     storage = MemoryStorage()
@@ -46,10 +44,9 @@ def state():
     return state
 
 
-# Патч для get_session
 @pytest.fixture
 def session_patch(session):
-    # Создаем контекстный менеджер, который просто возвращает сессию
+
     class SessionContext:
         async def __aenter__(self):
             return session
@@ -68,7 +65,7 @@ def fresh_session_factory():
         async_sessionmaker,
         AsyncSession,
     )
-    from app.core.database import Base  # Убедитесь, что Base импортируется корректно
+    from app.core.database import Base
 
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
 
@@ -82,7 +79,6 @@ def fresh_session_factory():
 
     yield _factory
 
-    # По окончании всех тестов модуля
     import asyncio
 
     loop = asyncio.get_event_loop()
@@ -92,56 +88,45 @@ def fresh_session_factory():
 @pytest.mark.asyncio
 async def test_cmd_edit_store(create_message, state, session_patch):
     """Тест команды редактирования магазина"""
-    # Создаем тестовый магазин
+
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("TestEditStore")
 
-    # Вызываем функцию обработчика
     message = create_message()
     await cmd_edit_store(message, state)
 
-    # Проверяем, что сообщение было отправлено и состояние установлено
     message.answer.assert_called_once()
     assert "Выберите магазин для редактирования" in message.answer.call_args[0][0]
 
-    # Проверяем, что состояние правильно установлено
     assert await state.get_state() == EditStoreStates.waiting_store
 
 
 @pytest.mark.asyncio
 async def test_edit_store_flow(create_message, state, session_patch):
     """Тест полного потока редактирования магазина"""
-    # Создаем тестовый магазин
+
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("FlowTestStore")
     await store_svc.set_plan(store, 100.0)
 
-    # Шаг 1: Выбор магазина
     message1 = create_message("FlowTestStore")
     await process_edit_store_selection(message1, state)
 
-    # Проверяем состояние после выбора магазина
     assert await state.get_state() == EditStoreStates.waiting_field
     state_data = await state.get_data()
     assert state_data["store_name"] == "FlowTestStore"
 
-    # Шаг 2: Выбор поля для редактирования (план)
     message2 = create_message("Изменить план")
     await process_edit_store_field(message2, state)
 
-    # Проверяем состояние после выбора поля
     assert await state.get_state() == EditStoreStates.waiting_value
     state_data = await state.get_data()
     assert state_data["edit_field"] == "plan"
 
-    # Создаем сессию для проверки изменений в базе
     store_service = StoreService(session_patch)
 
-    # Шаг 3: Ввод нового значения
-    # Создаем новый AsyncMock для message3, чтобы не конфликтовать с предыдущими вызовами
     message3 = create_message("200.5")
 
-    # Патчим store_service.get_by_name в процессе выполнения process_edit_store_value
     with patch(
         "app.services.store_service.StoreService.get_by_name", return_value=store
     ):
@@ -150,72 +135,61 @@ async def test_edit_store_flow(create_message, state, session_patch):
         ):
             await process_edit_store_value(message3, state)
 
-    # Проверяем, что состояние очищено
     assert await state.get_state() is None
 
 
 @pytest.mark.asyncio
 async def test_cmd_edit_manager(create_message, state, session_patch):
     """Тест команды редактирования менеджера"""
-    # Создаем тестового менеджера
+
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("TestEdit", "Manager", "manager")
 
-    # Патчим UserService.get_all_users, чтобы вернуть список, включающий созданного менеджера
     with patch(
         "app.services.user_service.UserService.get_all_users", return_value=[manager]
     ):
-        # Вызываем функцию обработчика
+
         message = create_message()
         await cmd_edit_manager(message, state)
 
-        # Проверяем, что сообщение было отправлено и состояние установлено
         message.answer.assert_called_once()
         assert "Выберите менеджера для редактирования" in message.answer.call_args[0][0]
 
-        # Проверяем, что состояние правильно установлено
         assert await state.get_state() == EditManagerStates.waiting_manager
 
 
 @pytest.mark.asyncio
 async def test_edit_manager_flow(create_message, state, session_patch):
     """Тест полного потока редактирования менеджера"""
-    # Создаем тестового менеджера и магазин
+
     user_svc = UserService(session_patch)
     store_svc = StoreService(session_patch)
 
     manager = await user_svc.get_or_create("FlowTest", "Manager", "manager")
     store = await store_svc.get_or_create("ManagerTestStore")
 
-    # Шаг 1: Выбор менеджера
     message1 = create_message("FlowTest Manager")
     await process_edit_manager_selection(message1, state)
 
-    # Проверяем состояние после выбора менеджера
     assert await state.get_state() == EditManagerStates.waiting_field
     state_data = await state.get_data()
     assert state_data["manager_name"] == "FlowTest Manager"
 
-    # Шаг 2: Выбор поля для редактирования (магазин)
     message2 = create_message("Изменить магазин")
 
-    # Патчим StoreService.list_stores, чтобы вернуть список с созданным магазином
     with patch(
         "app.services.store_service.StoreService.list_stores", return_value=[store]
     ):
         await process_edit_manager_field(message2, state)
 
-    # Проверяем состояние после выбора поля
     assert await state.get_state() == EditManagerStates.waiting_value
     state_data = await state.get_data()
     assert state_data["edit_field"] == "store"
     assert state_data["first_name"] == "FlowTest"
     assert state_data["last_name"] == "Manager"
 
-    # Шаг 3: Выбор магазина
     message3 = create_message("ManagerTestStore")
 
-    # Патчим необходимые методы для успешного выполнения flow
     with patch(
         "app.services.user_service.UserService.get_by_name", return_value=manager
     ):
@@ -228,7 +202,6 @@ async def test_edit_manager_flow(create_message, state, session_patch):
             ):
                 await process_edit_manager_value(message3, state)
 
-    # Проверяем, что состояние очищено
     assert await state.get_state() is None
 
 
@@ -244,12 +217,9 @@ async def test_edit_manager_multiname_flow(create_message, state, session_patch)
     message1 = create_message("Екатерина Тараскина Тараскина")
     await process_edit_manager_selection(message1, state)
 
-    # Проверяем состояние
     assert await state.get_state() == EditManagerStates.waiting_field
     data = await state.get_data()
     assert data["manager_name"] == "Екатерина Тараскина Тараскина"
-
-    # Дальше могли бы тестировать изменение имени, проверку в базе и т.д.
 
 
 @pytest.mark.asyncio
@@ -258,12 +228,10 @@ async def test_manager_delete_flow(create_message, state, session_patch):
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("Single", "Word", "manager")
 
-    # Шаг 1: Выбор менеджера
     message1 = create_message("Single Word")
     await process_edit_manager_selection(message1, state)
     assert await state.get_state() == EditManagerStates.waiting_field
 
-    # Шаг 2: Удаление менеджера
     message2 = create_message("Удалить менеджера")
     with patch(
         "app.services.user_service.UserService.delete_user", return_value=None
@@ -280,12 +248,10 @@ async def test_store_delete_flow(create_message, state, session_patch):
     store_svc = StoreService(session_patch)
     store = await store_svc.get_or_create("OneWordStore")
 
-    # Шаг 1: Выбор магазина
     message1 = create_message("OneWordStore")
     await process_edit_store_selection(message1, state)
     assert await state.get_state() == EditStoreStates.waiting_field
 
-    # Шаг 2: Удаление магазина
     message2 = create_message("Удалить магазин")
     with patch(
         "app.services.store_service.StoreService.delete_store", return_value=None
@@ -311,7 +277,7 @@ async def test_manager_single_word_validation(create_message, state, session_pat
 @pytest.mark.asyncio
 async def test_eager_load_store(fresh_session_factory):
     """Тест, проверяющий, что можно получить store без DetachedInstanceError после закрытия сессии."""
-    # Первая свежая сессия: создаём данные
+
     session1 = await fresh_session_factory()
     user_svc_1 = UserService(session1)
     store_svc_1 = StoreService(session1)
@@ -321,7 +287,6 @@ async def test_eager_load_store(fresh_session_factory):
     )
     await session1.close()
 
-    # Вторая свежая сессия: проверяем, что данные доступны
     session2 = await fresh_session_factory()
     user_svc_2 = UserService(session2)
     loaded_manager = await user_svc_2.get_by_name_with_store("Eager", "Test")
