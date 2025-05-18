@@ -52,13 +52,23 @@ class MatryoshkaFillBuilder:
         self.base_image = Image.open(self.image_path).convert("RGBA")
         width, height = self.base_image.size
 
-        # Создаем маску из изображения
+        # создаем маску из оригинального
         mask = self.base_image.convert("L")
         mask = ImageOps.invert(mask)
         mask = mask.point(lambda p: 255 if p > 50 else 0)
+        arr = np.array(mask)
 
-        # Преобразуем в массив для эффективной обработки
-        self.mask_array = np.array(mask)
+        # если нужно показывать инфо, расширяем холст под текст
+        if self.config.get("show_info", False):
+            extra = self.config.get("info_x_offset", 50) + 20
+            # расширяем изображение
+            new_img = Image.new("RGBA", (width + extra, height), (0, 0, 0, 0))
+            new_img.paste(self.base_image, (0, 0))
+            self.base_image = new_img
+            # расширяем маску
+            arr = np.pad(arr, ((0, 0), (0, extra)), constant_values=0)
+
+        self.mask_array = arr
         return self
 
     def find_boundaries(self):
@@ -291,6 +301,15 @@ class MatryoshkaFillBuilder:
         if self.result is None:
             self.result = Image.alpha_composite(self.base_image, self.fill_layer)
 
+        # При включённом информационном тексте расширяем полотно справа
+        if self.config.get("show_info", False):
+            w, h = self.result.size
+            # подстраиваем отступ под текст: info_x_offset + запас
+            extra = self.config.get("info_x_offset", 50) + 150
+            new_canvas = Image.new("RGBA", (w + extra, h), (255, 255, 255, 0))
+            new_canvas.paste(self.result, (0, 0))
+            self.result = new_canvas
+
         # Если передан путь для сохранения, сохраняем файл
         if output_path:
             self.result.save(output_path)
@@ -361,9 +380,9 @@ class MatryoshkaCompositionBuilder:
             "meniscus_max_height": 30,
             "meniscus_curve_factor": 6,
             "show_percent": True,
-            "font_size": 50,
-            "info_font_size": 36,
-            "info_x_offset": 50,
+            "font_size": 100,
+            "info_font_size": 48,  # Увеличиваем размер шрифта
+            "info_x_offset": 80,  # Увеличиваем отступ справа
         }
 
         # Загружаем шаблон для определения размеров
@@ -435,20 +454,10 @@ class MatryoshkaCompositionBuilder:
         return result_buffers
 
     def _create_vertical_layout(self, matryoshkas: List[MatryoshkaData]) -> io.BytesIO:
-        """Создание вертикальной композиции из матрешек"""
-        # Определяем размеры композиции
-        info_width = 0  # Примерная ширина для информационной части
-        composition_width = self.template_width + info_width
-        composition_height = (self.template_height + self.padding) * len(matryoshkas)
-
-        # Создаем пустое изображение для композиции
-        composition = Image.new(
-            "RGBA", (composition_width, composition_height), (255, 255, 255, 255)
-        )
-
-        # Добавляем каждую матрешку
-        for idx, data in enumerate(matryoshkas):
-            # Формируем параметры для создания матрешки
+        """Вертикальное расположение матрешек с адаптивной шириной холста"""
+        # Сначала создаем все изображения матрешек
+        images = []
+        for data in matryoshkas:
             params = {
                 **self.global_config,
                 "fill_percent": data.fill_percent,
@@ -460,11 +469,9 @@ class MatryoshkaCompositionBuilder:
                 "total_amount": data.total_amount,
                 "plan_amount": data.plan_amount,
             }
-
-            # Создаем изображение матрешки
-            matryoshka_builder = MatryoshkaFillBuilder(self.template_path)
-            matryoshka_buffer = (
-                matryoshka_builder.configure(**params)
+            buf = (
+                MatryoshkaFillBuilder(self.template_path)
+                .configure(**params)
                 .load_image()
                 .find_boundaries()
                 .create_fill_layer()
@@ -472,37 +479,35 @@ class MatryoshkaCompositionBuilder:
                 .add_info_text()
                 .build()
             )
+            images.append(Image.open(buf))
 
-            # Загружаем изображение из буфера
-            matryoshka_img = Image.open(matryoshka_buffer)
+        # Вычисляем размеры холста
+        widths = [img.width for img in images]
+        heights = [img.height for img in images]
+        comp_w = max(widths)
+        comp_h = sum(heights) + self.padding * (len(images) - 1)
 
-            # Вставляем в композицию
-            y_position = idx * (self.template_height + self.padding)
-            composition.paste(matryoshka_img, (0, y_position), matryoshka_img)
+        # Создаем холст
+        comp = Image.new("RGBA", (comp_w, comp_h), (255, 255, 255, 255))
 
-        # Сохраняем композицию в буфер
-        output_buffer = io.BytesIO()
-        composition.save(output_buffer, format="PNG")
-        output_buffer.seek(0)
-        return output_buffer
+        # Вставляем изображения, центрируя по ширине
+        y = 0
+        for img in images:
+            x = (comp_w - img.width) // 2
+            comp.paste(img, (x, y), img)
+            y += img.height + self.padding
+
+        buf = io.BytesIO()
+        comp.save(buf, format="PNG")
+        buf.seek(0)
+        return buf
 
     def _create_horizontal_layout(
         self, matryoshkas: List[MatryoshkaData]
     ) -> io.BytesIO:
-        """Создание горизонтальной композиции из матрешек"""
-        # Определяем размеры композиции с учетом информации справа от матрешек
-        info_width = 400  # Примерная ширина для информационной части
-        single_width = self.template_width + info_width
-        composition_width = single_width * len(matryoshkas)
-        composition_height = self.template_height
-
-        # Создаем пустое изображение для композиции
-        composition = Image.new(
-            "RGBA", (composition_width, composition_height), (255, 255, 255, 255)
-        )
-
-        # Добавляем каждую матрешку
-        for idx, data in enumerate(matryoshkas):
+        """Горизонтальное расположение матрешек с адаптивной шириной холста"""
+        images = []
+        for data in matryoshkas:
             params = {
                 **self.global_config,
                 "fill_percent": data.fill_percent,
@@ -514,10 +519,9 @@ class MatryoshkaCompositionBuilder:
                 "total_amount": data.total_amount,
                 "plan_amount": data.plan_amount,
             }
-
-            matryoshka_builder = MatryoshkaFillBuilder(self.template_path)
-            matryoshka_buffer = (
-                matryoshka_builder.configure(**params)
+            buf = (
+                MatryoshkaFillBuilder(self.template_path)
+                .configure(**params)
                 .load_image()
                 .find_boundaries()
                 .create_fill_layer()
@@ -525,18 +529,24 @@ class MatryoshkaCompositionBuilder:
                 .add_info_text()
                 .build()
             )
+            images.append(Image.open(buf))
 
-            matryoshka_img = Image.open(matryoshka_buffer)
+        widths = [img.width for img in images]
+        heights = [img.height for img in images]
+        comp_w = sum(widths) + self.padding * (len(images) - 1)
+        comp_h = max(heights)
 
-            # Вставляем в композицию
-            x_position = idx * single_width
-            composition.paste(matryoshka_img, (x_position, 0), matryoshka_img)
+        comp = Image.new("RGBA", (comp_w, comp_h), (255, 255, 255, 255))
 
-        # Сохраняем композицию в буфер
-        output_buffer = io.BytesIO()
-        composition.save(output_buffer, format="PNG")
-        output_buffer.seek(0)
-        return output_buffer
+        x = 0
+        for img in images:
+            comp.paste(img, (x, (comp_h - img.height) // 2), img)
+            x += img.width + self.padding
+
+        buf = io.BytesIO()
+        comp.save(buf, format="PNG")
+        buf.seek(0)
+        return buf
 
     def _create_grid_layout(self, matryoshkas: List[MatryoshkaData]) -> io.BytesIO:
         """Создание сетки из матрешек (для будущего расширения)"""
@@ -637,7 +647,11 @@ if __name__ == "__main__":
 
     # Создаем коллекцию матрешек
     buffers = create_matryoshka_collection(
-        "image.png", shops, layout="vertical", max_per_image=2, output_dir="output"
+        "resources/matryoshka_template.png",
+        shops,
+        layout="vertical",
+        max_per_image=2,
+        output_dir="output",
     )
 
     print(f"Создано {len(buffers)} изображений с матрешками")

@@ -40,6 +40,7 @@ htmlcov/
 *.swo
 
 # Сгенерированные файлы и ресурсы
+output/
 *.xlsx
 *.jpg
 *.jpeg
