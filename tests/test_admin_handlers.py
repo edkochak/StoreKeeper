@@ -182,9 +182,10 @@ async def test_edit_manager_flow(create_message, state, session_patch):
     assert await state.get_state() is None
 
 
+@pytest.mark.skip(reason="Многословные фамилии больше не поддерживаются")
 @pytest.mark.asyncio
 async def test_edit_manager_multiname_flow(create_message, state, session_patch):
-    """Тест редактирования менеджера с многословной фамилией"""
+    """Тест редактирования менеджера с многословной фамилией (отключен)"""
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("Екатерина", "Тараскина Тараскина", "manager")
     
@@ -197,3 +198,55 @@ async def test_edit_manager_multiname_flow(create_message, state, session_patch)
     assert data["manager_name"] == "Екатерина Тараскина Тараскина"
 
     # Дальше могли бы тестировать изменение имени, проверку в базе и т.д.
+
+
+@pytest.mark.asyncio
+async def test_manager_delete_flow(create_message, state, session_patch):
+    """Тест удаления менеджера"""
+    user_svc = UserService(session_patch)
+    manager = await user_svc.get_or_create("Single", "Word", "manager")
+    
+    # Шаг 1: Выбор менеджера
+    message1 = create_message("Single Word")
+    await process_edit_manager_selection(message1, state)
+    assert await state.get_state() == EditManagerStates.waiting_field
+    
+    # Шаг 2: Удаление менеджера
+    message2 = create_message("Удалить менеджера")
+    with patch('app.services.user_service.UserService.delete_user', return_value=None) as mock_del:
+        await process_edit_manager_field(message2, state)
+    
+    mock_del.assert_called_once_with(manager)
+    assert await state.get_state() is None
+
+
+@pytest.mark.asyncio
+async def test_store_delete_flow(create_message, state, session_patch):
+    """Тест удаления магазина"""
+    store_svc = StoreService(session_patch)
+    store = await store_svc.get_or_create("OneWordStore")
+    
+    # Шаг 1: Выбор магазина
+    message1 = create_message("OneWordStore")
+    await process_edit_store_selection(message1, state)
+    assert await state.get_state() == EditStoreStates.waiting_field
+    
+    # Шаг 2: Удаление магазина
+    message2 = create_message("Удалить магазин")
+    with patch('app.services.store_service.StoreService.delete_store', return_value=None) as mock_del:
+        await process_edit_store_field(message2, state)
+    
+    mock_del.assert_called_once_with(store)
+    assert await state.get_state() is None
+
+
+@pytest.mark.asyncio
+async def test_manager_single_word_validation(create_message, state, session_patch):
+    """Тест проверки, что имя и фамилия - одно слово каждое"""
+    user_svc = UserService(session_patch)
+    
+    with pytest.raises(ValueError):
+        await user_svc.get_or_create("John Paul", "Doe", "manager")
+
+    with pytest.raises(ValueError):
+        await user_svc.get_or_create("John", "Van Doe", "manager")

@@ -496,16 +496,20 @@ async def process_edit_store_selection(message: types.Message, state: FSMContext
     store_name = message.text.strip()
     await state.update_data(store_name=store_name)
 
+    await message.answer(
+        f"Выберите, что хотите изменить для магазина '{store_name}':",
+        reply_markup=get_edit_store_field_keyboard(),
+    )
+    await state.set_state(EditStoreStates.waiting_field)
+
+
+def get_edit_store_field_keyboard():
     kb = ReplyKeyboardBuilder()
     kb.button(text="Изменить название")
     kb.button(text="Изменить план")
+    kb.button(text="Удалить магазин")  # Новый пункт удаления магазина
     kb.adjust(1)
-
-    await message.answer(
-        f"Выберите, что хотите изменить для магазина '{store_name}':",
-        reply_markup=kb.as_markup(resize_keyboard=True),
-    )
-    await state.set_state(EditStoreStates.waiting_field)
+    return kb.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 
 @router.message(EditStoreStates.waiting_field)
@@ -514,6 +518,18 @@ async def process_edit_store_field(message: types.Message, state: FSMContext):
     field = message.text.strip()
     data = await state.get_data()
     store_name = data.get("store_name")
+
+    if field == "Удалить магазин":
+        async with get_session() as session:
+            store_service = StoreService(session)
+            store = await store_service.get_by_name(store_name)
+            if store:
+                await store_service.delete_store(store)
+                await message.answer(f"Магазин '{store_name}' удален.")
+            else:
+                await message.answer(f"Магазин '{store_name}' не найден.")
+        await state.clear()
+        return
 
     if field == "Изменить название":
         await state.update_data(edit_field="name")
@@ -620,6 +636,7 @@ def get_edit_manager_field_keyboard():
     kb.button(text="Изменить имя")
     kb.button(text="Изменить фамилию")
     kb.button(text="Изменить магазин")
+    kb.button(text="Удалить менеджера")  # Новый пункт удаления менеджера
     kb.adjust(1)
     return kb.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
@@ -705,6 +722,17 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
                 reply_markup=kb.as_markup(resize_keyboard=True),
             )
             await state.set_state(EditManagerStates.waiting_value)
+    elif field == "Удалить менеджера":
+        async with get_session() as session:
+            user_service = UserService(session)
+            manager = await user_service.get_by_name(first_name, last_name)
+            if manager:
+                await user_service.delete_user(manager)
+                await message.answer(f"Менеджер '{manager_name}' удален.")
+            else:
+                await message.answer(f"Менеджер '{manager_name}' не найден.")
+        await state.clear()
+        return
     else:
         await message.answer("Пожалуйста, выберите один из предложенных вариантов.")
         return

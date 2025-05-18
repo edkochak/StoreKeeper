@@ -128,11 +128,12 @@ class RevenueService:
                     # Создаем график выручки по дням для этого магазина
                     plt.figure(figsize=(10, 6))
                     plt.plot(store_data['date'], store_data['amount'], marker='o', linestyle='-')
-                    plt.xlabel('Дата')
-                    plt.ylabel('Выручка')
-                    plt.title(f'Динамика выручки магазина "{store_name}"')
+                    plt.xlabel('Дата', fontsize=14)
+                    plt.ylabel('Выручка', fontsize=14)
+                    plt.title(f'Динамика выручки магазина "{store_name}"', fontsize=16)
+                    plt.xticks(fontsize=12)
+                    plt.yticks(fontsize=12)
                     plt.grid(True)
-                    plt.xticks(rotation=45)
                     plt.tight_layout()
                     
                     # Сохраняем в байтовый поток

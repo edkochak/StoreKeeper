@@ -59,3 +59,7 @@ class StoreRepository:
         await self.session.commit()
         await self.session.refresh(store)
         return store
+
+    async def delete_store(self, store: Store) -> None:
+        await self.session.delete(store)
+        await self.session.commit()

@@ -13,7 +13,10 @@ class UserService:
 
     async def get_or_create(
         self, first_name: str, last_name: str, role: str, store_id: Optional[int] = None
-    ):
+    ) -> User:
+        # Валидация: оба поля — одно слово каждое
+        if " " in first_name.strip() or " " in last_name.strip():
+            raise ValueError("Имя и фамилия должны состоять из одного слова каждая.")
         user = await self.repo.get_by_full_name(first_name, last_name)
         if not user:
             user = await self.repo.create(first_name, last_name, role, store_id)
@@ -51,6 +54,9 @@ class UserService:
             Optional[User]: Объект пользователя или None, если пользователь не найден
         """
         return await self.repo.get_by_id(user_id)
+
+    async def delete_user(self, user: User) -> None:
+        await self.repo.delete_user(user)
 
     def can_view_reports(self, user: User) -> bool:
         """

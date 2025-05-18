@@ -36,3 +36,6 @@ class StoreService:
         """Обновить название магазина"""
         logger.info("Изменение названия магазина %s на %s", store.name, new_name)
         return await self.repo.update_name(store, new_name)
+
+    async def delete_store(self, store: Store) -> None:
+        await self.repo.delete_store(store)
