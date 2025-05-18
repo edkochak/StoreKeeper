@@ -203,7 +203,7 @@ class MatryoshkaFillBuilder:
             text_bbox[2] + padding,
             text_bbox[3] + padding,
         )
-        draw.rectangle(bg_bbox, fill=(255, 255, 255, 180))  # Полупрозрачный белый фон
+        draw.rectangle(bg_bbox, fill=(250, 250, 250, 180))  # Полупрозрачный белый фон
 
         # Рисуем текст
         draw.text((text_x, text_y), percent_text, font=font, fill=text_color)
@@ -306,7 +306,7 @@ class MatryoshkaFillBuilder:
             w, h = self.result.size
             # подстраиваем отступ под текст: info_x_offset + запас
             extra = self.config.get("info_x_offset", 50) + 150
-            new_canvas = Image.new("RGBA", (w + extra, h), (255, 255, 255, 0))
+            new_canvas = Image.new("RGBA", (w + extra, h), (250, 250, 250, 0))
             new_canvas.paste(self.result, (0, 0))
             self.result = new_canvas
 
@@ -488,7 +488,7 @@ class MatryoshkaCompositionBuilder:
         comp_h = sum(heights) + self.padding * (len(images) - 1)
 
         # Создаем холст
-        comp = Image.new("RGBA", (comp_w, comp_h), (255, 255, 255, 255))
+        comp = Image.new("RGBA", (comp_w, comp_h), (250, 250, 250, 255))
 
         # Вставляем изображения, центрируя по ширине
         y = 0
@@ -536,7 +536,7 @@ class MatryoshkaCompositionBuilder:
         comp_w = sum(widths) + self.padding * (len(images) - 1)
         comp_h = max(heights)
 
-        comp = Image.new("RGBA", (comp_w, comp_h), (255, 255, 255, 255))
+        comp = Image.new("RGBA", (comp_w, comp_h), (250, 250, 250, 255))
 
         x = 0
         for img in images:
