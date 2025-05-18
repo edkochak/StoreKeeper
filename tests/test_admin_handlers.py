@@ -61,6 +61,34 @@ def session_patch(session):
         yield session
 
 
+@pytest.fixture(scope="module")
+def fresh_session_factory():
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        async_sessionmaker,
+        AsyncSession,
+    )
+    from app.core.database import Base  # Убедитесь, что Base импортируется корректно
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+
+    async def _factory():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        sessionmaker_ = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+        return sessionmaker_()
+
+    yield _factory
+
+    # По окончании всех тестов модуля
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(engine.dispose())
+
+
 @pytest.mark.asyncio
 async def test_cmd_edit_store(create_message, state, session_patch):
     """Тест команды редактирования магазина"""
@@ -278,3 +306,25 @@ async def test_manager_single_word_validation(create_message, state, session_pat
 
     with pytest.raises(ValueError):
         await user_svc.get_or_create("John", "Van Doe", "manager")
+
+
+@pytest.mark.asyncio
+async def test_eager_load_store(fresh_session_factory):
+    """Тест, проверяющий, что можно получить store без DetachedInstanceError после закрытия сессии."""
+    # Первая свежая сессия: создаём данные
+    session1 = await fresh_session_factory()
+    user_svc_1 = UserService(session1)
+    store_svc_1 = StoreService(session1)
+    store = await store_svc_1.get_or_create("EagerLoadStore")
+    manager = await user_svc_1.get_or_create(
+        "Eager", "Test", "manager", store_id=store.id
+    )
+    await session1.close()
+
+    # Вторая свежая сессия: проверяем, что данные доступны
+    session2 = await fresh_session_factory()
+    user_svc_2 = UserService(session2)
+    loaded_manager = await user_svc_2.get_by_name_with_store("Eager", "Test")
+    assert loaded_manager is not None
+    assert loaded_manager.store is not None
+    await session2.close()

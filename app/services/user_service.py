@@ -1,4 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
@@ -10,6 +12,7 @@ logger = logging.getLogger(__name__)
 class UserService:
     def __init__(self, session: AsyncSession):
         self.repo = UserRepository(session)
+        self.session = session
 
     async def get_or_create(
         self, first_name: str, last_name: str, role: str, store_id: Optional[int] = None
@@ -26,6 +29,17 @@ class UserService:
         """Получить пользователя по имени и фамилии"""
         logger.info(f"Поиск пользователя по имени и фамилии: {first_name} {last_name}")
         return await self.repo.get_by_name(first_name, last_name)
+
+    async def get_by_name_with_store(
+        self, first_name: str, last_name: str
+    ) -> Optional[User]:
+        stmt = (
+            select(User)
+            .options(selectinload(User.store))
+            .filter(User.first_name == first_name, User.last_name == last_name)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def assign_store(self, user: User, store_id: int) -> User:
         """Привязать менеджера к магазину"""

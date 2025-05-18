@@ -722,6 +722,15 @@ async def process_edit_manager_field(message: types.Message, state: FSMContext):
         )
         await state.set_state(EditManagerStates.waiting_value)
     elif field == "Изменить магазин":
+        data = await state.get_data()
+        full_name = data.get("manager_name", "")
+        parts = full_name.split(" ", 1)
+        if len(parts) == 2:
+            first_name, last_name = parts
+            async with get_session() as session:
+                user_svc = UserService(session)
+                manager = await user_svc.get_by_name_with_store(first_name, last_name)
+                # Теперь manager.store доступен без DetachedInstanceError
         await state.update_data(
             edit_field="store", first_name=first_name, last_name=last_name
         )
