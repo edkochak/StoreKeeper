@@ -26,3 +26,11 @@ class UserService:
     async def get_all_users(self) -> List[User]:
         """Получить всех пользователей"""
         return await self.repo.get_all()
+
+    async def update_first_name(self, user: User, first_name: str) -> User:
+        """Обновить имя пользователя"""
+        return await self.repo.update_first_name(user, first_name)
+
+    async def update_last_name(self, user: User, last_name: str) -> User:
+        """Обновить фамилию пользователя"""
+        return await self.repo.update_last_name(user, last_name)

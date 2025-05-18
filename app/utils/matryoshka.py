@@ -302,6 +302,11 @@ class MatryoshkaFillBuilder:
 
         return img_buffer
 
+    def _get_color_by_progress(self, percent: int) -> tuple:
+        """Определяет цвет матрешки - всегда одинаковый"""
+        # Используем единый цвет для всех матрешек - синий
+        return (70, 130, 180, 200)  # Стальной синий
+
 
 class LayoutStrategy(Enum):
     """Стратегии расположения матрешек в композиции"""

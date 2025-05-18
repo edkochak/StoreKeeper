@@ -47,6 +47,9 @@ htmlcov/
 *.jpeg
 *.pdf
 *.csv
+*.aux
+*.out
+*.toc
 
 # Базы данных
 *.sqlite

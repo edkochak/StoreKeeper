@@ -51,3 +51,11 @@ class StoreRepository:
         await self.session.commit()
         await self.session.refresh(store)
         return store
+
+    async def update_name(self, store: Store, new_name: str) -> Store:
+        """Обновить название магазина"""
+        store.name = new_name
+        self.session.add(store)
+        await self.session.commit()
+        await self.session.refresh(store)
+        return store

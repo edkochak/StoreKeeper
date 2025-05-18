@@ -46,3 +46,19 @@ class UserRepository:
         await self.session.commit()
         await self.session.refresh(user)
         return user
+
+    async def update_first_name(self, user: User, first_name: str) -> User:
+        """Обновить имя пользователя"""
+        user.first_name = first_name
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
+
+    async def update_last_name(self, user: User, last_name: str) -> User:
+        """Обновить фамилию пользователя"""
+        user.last_name = last_name
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user

@@ -31,3 +31,8 @@ class StoreService:
     async def get_by_name(self, name: str) -> Optional[Store]:
         """Получить магазин по имени"""
         return await self.repo.get_by_name(name)
+
+    async def update_name(self, store: Store, new_name: str) -> Store:
+        """Обновить название магазина"""
+        logger.info("Изменение названия магазина %s на %s", store.name, new_name)
+        return await self.repo.update_name(store, new_name)

@@ -31,3 +31,15 @@ class CreateManagerStates(StatesGroup):
     waiting_first_name = State()
     waiting_last_name = State()
     waiting_store = State()
+
+
+class EditStoreStates(StatesGroup):
+    waiting_store = State()
+    waiting_field = State()
+    waiting_value = State()
+
+
+class EditManagerStates(StatesGroup):
+    waiting_manager = State()
+    waiting_field = State()
+    waiting_value = State()
