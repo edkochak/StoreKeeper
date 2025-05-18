@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload  # <-- импортируем
 from app.models.store import Store
+from app.models.user import User
 
 
 class StoreRepository:
@@ -12,7 +13,10 @@ class StoreRepository:
     async def get_all(self) -> List[Store]:
         # жадно подгружаем менеджеров, чтобы не было lazy-load вне сессии
         result = await self.session.execute(
-            select(Store).options(selectinload(Store.managers))
+            select(Store).options(
+                selectinload(Store.managers)
+                .selectinload(User.store)  # вложенная загрузка store у менеджеров
+            )
         )
         return result.scalars().all()
 
