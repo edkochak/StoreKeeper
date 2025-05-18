@@ -615,23 +615,39 @@ async def cmd_edit_manager(message: types.Message, state: FSMContext):
         await state.set_state(EditManagerStates.waiting_manager)
 
 
-@router.message(EditManagerStates.waiting_manager)
-async def process_edit_manager_selection(message: types.Message, state: FSMContext):
-    """Обработка выбора менеджера для редактирования"""
-    manager_name = message.text.strip()
-    await state.update_data(manager_name=manager_name)
-    
+def get_edit_manager_field_keyboard():
     kb = ReplyKeyboardBuilder()
     kb.button(text="Изменить имя")
     kb.button(text="Изменить фамилию")
     kb.button(text="Изменить магазин")
     kb.adjust(1)
-    
-    await message.answer(
-        f"Выберите, что хотите изменить для менеджера '{manager_name}':",
-        reply_markup=kb.as_markup(resize_keyboard=True),
-    )
+    return kb.as_markup(resize_keyboard=True, one_time_keyboard=True)
+
+
+@router.message(EditManagerStates.waiting_manager)
+async def process_edit_manager_selection(message: types.Message, state: FSMContext):
+    """
+    Обработка выбора менеджера для редактирования.
+    """
+    manager_name_raw = message.text.strip()
+    # Разделяем имя на 2 части: первой считаем имя, все оставшееся - фамилия.
+    # Если частей меньше 2, выводим ошибку.
+    parts = manager_name_raw.split(" ", 1)
+    if len(parts) < 2:
+        await message.answer(
+            "Пожалуйста, укажите имя и фамилию (фамилия может содержать несколько слов).",
+            reply_markup=get_main_keyboard("admin"),
+        )
+        await state.clear()
+        return
+
+    # Сохраняем полное "Имя Фамилия" в manager_name для дальнейших шагов
+    await state.update_data(manager_name=manager_name_raw)
     await state.set_state(EditManagerStates.waiting_field)
+    await message.answer(
+        f"Выберите, что хотите изменить для менеджера '{manager_name_raw}':",
+        reply_markup=get_edit_manager_field_keyboard()
+    )
 
 
 @router.message(EditManagerStates.waiting_field)

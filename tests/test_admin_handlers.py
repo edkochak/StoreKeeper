@@ -180,3 +180,20 @@ async def test_edit_manager_flow(create_message, state, session_patch):
     
     # Проверяем, что состояние очищено
     assert await state.get_state() is None
+
+
+@pytest.mark.asyncio
+async def test_edit_manager_multiname_flow(create_message, state, session_patch):
+    """Тест редактирования менеджера с многословной фамилией"""
+    user_svc = UserService(session_patch)
+    manager = await user_svc.get_or_create("Екатерина", "Тараскина Тараскина", "manager")
+    
+    message1 = create_message("Екатерина Тараскина Тараскина")
+    await process_edit_manager_selection(message1, state)
+    
+    # Проверяем состояние
+    assert await state.get_state() == EditManagerStates.waiting_field
+    data = await state.get_data()
+    assert data["manager_name"] == "Екатерина Тараскина Тараскина"
+
+    # Дальше могли бы тестировать изменение имени, проверку в базе и т.д.
