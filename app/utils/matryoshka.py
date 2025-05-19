@@ -38,7 +38,7 @@ class MatryoshkaFillBuilder:
             "info_text_color": (0, 0, 0, 255),
             "info_font_size": 36,
             "info_x_offset": 50,
-            "percent_text_offset": 30,
+            "percent_text_offset": 60,
         }
 
     def configure(self, **kwargs):
