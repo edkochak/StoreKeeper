@@ -17,23 +17,21 @@ def validate_revenue_amount(amount_str: str) -> float:
         float: Сумма выручки в виде числа с плавающей точкой
 
     Raises:
-        ValueError: Если строка имеет неправильный формат или отрицательное значение
+        ValueError: Если строка имеет неправильный формат
     """
     if not amount_str:
         raise ValueError("Сумма выручки не может быть пустой")
 
     amount_str = amount_str.replace(",", ".")
 
-    if not re.match(r"^[0-9]+(\.[0-9]+)?$", amount_str):
+    if not re.match(r"^-?[0-9]+(\.[0-9]+)?$", amount_str):
         raise ValueError(
-            f"Неверный формат суммы: {amount_str }. Используйте только цифры и точку/запятую."
+            f"Неверный формат суммы: {amount_str }. Используйте только цифры, знак минуса (опционально) и точку/запятую."
         )
 
     amount = float(amount_str)
 
-    if amount < 0:
-        raise ValueError("Сумма выручки не может быть отрицательной")
-
+    # Отрицательные значения выручки теперь разрешены для учета возвратов
     return amount
 
 

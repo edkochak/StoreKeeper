@@ -14,11 +14,13 @@ def test_revenue_amount_validation():
     assert validate_revenue_amount("100.50") == 100.5
     assert validate_revenue_amount("100,50") == 100.5
     assert validate_revenue_amount("1000000") == 1000000.0
+    # Проверяем, что отрицательная выручка теперь разрешена для учета возвратов
+    assert validate_revenue_amount("-100") == -100.0
+    assert validate_revenue_amount("-99.99") == -99.99
+    assert validate_revenue_amount("-0.5") == -0.5
 
     with pytest.raises(ValueError):
         validate_revenue_amount("сто рублей")
-    with pytest.raises(ValueError):
-        validate_revenue_amount("-100")
     with pytest.raises(ValueError):
         validate_revenue_amount("")
     with pytest.raises(ValueError):
