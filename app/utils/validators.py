@@ -31,7 +31,6 @@ def validate_revenue_amount(amount_str: str) -> float:
 
     amount = float(amount_str)
 
-    # Отрицательные значения выручки теперь разрешены для учета возвратов
     return amount
 
 

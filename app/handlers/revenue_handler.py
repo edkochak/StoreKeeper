@@ -1,7 +1,7 @@
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from app.core.states import RevenueStates
 from app.core.database import get_session
@@ -9,6 +9,7 @@ from app.services.store_service import StoreService
 from app.services.user_service import UserService
 from app.services.revenue_service import RevenueService
 from app.utils.menu import get_main_keyboard
+from app.utils.validators import validate_date_format, validate_revenue_amount
 import logging
 
 router = Router()
@@ -44,7 +45,7 @@ async def cmd_revenue(message: types.Message, state: FSMContext):
 async def process_date(message: types.Message, state: FSMContext):
     try:
 
-        selected_date = datetime.strptime(message.text, "%d.%m.%Y").date()
+        selected_date = validate_date_format(message.text)
 
         if selected_date > date.today():
             await message.answer(
@@ -102,14 +103,11 @@ async def process_store(message: types.Message, state: FSMContext):
 async def process_amount(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
-        amount = float(message.text.replace(",", "."))
-        if amount < 0:
-            await message.answer(
-                "Выручка не может быть отрицательной. Введите положительное число:"
-            )
-            return
-    except ValueError:
-        await message.answer("Неверный формат числа. Пожалуйста, введите число:")
+
+        amount = validate_revenue_amount(message.text)
+    except ValueError as e:
+
+        await message.answer(str(e))
         return
 
     store_name = data.get("store_name")
