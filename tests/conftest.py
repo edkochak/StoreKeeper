@@ -8,6 +8,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+import app.models.store
+import app.models.user
+import app.models.revenue
 from app.core.database import Base
 
 

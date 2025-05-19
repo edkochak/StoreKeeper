@@ -24,17 +24,23 @@ async def send_daily_report(bot: Bot):
             await bot.send_photo(chat_id, io.BytesIO(img_bytes), filename=name)
 
 
-def schedule_daily_report(bot: Bot) -> AsyncIOScheduler:
+def schedule_daily_report(
+    bot: Bot, hour: int = 22, minute: int = 30, second: int = None
+) -> AsyncIOScheduler:
     """Планирует ежедневную отправку отчета в 22:30 по часовому поясу МСК"""
     scheduler = AsyncIOScheduler()
-    trigger = CronTrigger(hour=22, minute=30, timezone=pytz.timezone("Europe/Moscow"))
 
-    scheduler.add_job(
-        lambda: asyncio.create_task(send_daily_report(bot)), trigger=trigger
-    )
+    tz = pytz.timezone("Europe/Moscow")
+    trigger_args = {"timezone": tz}
+    if second is not None:
+        trigger_args["second"] = second
+    else:
+        trigger_args.update({"hour": hour, "minute": minute})
+    trigger = CronTrigger(**trigger_args)
+
+    scheduler.add_job(send_daily_report, trigger=trigger, args=[bot])
     try:
         scheduler.start()
     except RuntimeError:
-
         pass
     return scheduler

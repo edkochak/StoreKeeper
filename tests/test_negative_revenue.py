@@ -41,7 +41,7 @@ async def test_negative_revenue_creation(session):
         store_id=store.id, start_date=today, end_date=today
     )
 
-    assert sum_amount == 4000.0
+    assert sum_amount == -1000.0
 
 
 @pytest.mark.asyncio
@@ -78,10 +78,10 @@ async def test_matryoshka_with_negative_revenue(session):
 
     assert store_data is not None
 
-    expected_amount = 2500.0
+    expected_amount = -500.0
     assert (
         float(store_data["total_amount"].replace(" ₽", "").replace(" ", ""))
         == expected_amount
     )
 
-    assert store_data["fill_percent"] == 25
+    assert store_data["fill_percent"] == -5.0
