@@ -38,6 +38,7 @@ class MatryoshkaFillBuilder:
             "info_text_color": (0, 0, 0, 255),
             "info_font_size": 36,
             "info_x_offset": 50,
+            "percent_text_offset": 10,
         }
 
     def configure(self, **kwargs):
@@ -173,7 +174,9 @@ class MatryoshkaFillBuilder:
 
         left_offset = 20
         text_x = max(left_offset, self.boundaries["x_min"] - text_width - 30)
-        text_y = self.boundaries["y_fill_start"]
+        # Поднимаем текст процентов над уровнем заполнения минимум на percent_text_offset пикселей
+        offset = self.config.get("percent_text_offset", 10)
+        text_y = max(self.boundaries["ymin"], self.boundaries["y_fill_start"] - offset)
 
         text_color = self.config["fill_color"][:3] + (255,)
 
