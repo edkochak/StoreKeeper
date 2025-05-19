@@ -73,6 +73,6 @@ dump.rdb
 .eggs/
 .pytest_cache/
 .coverage.*
-test.py
+/test.py
 
 .github/copilot-instructions.md

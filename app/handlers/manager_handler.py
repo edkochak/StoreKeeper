@@ -4,7 +4,6 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 from app.core.database import get_session
 from app.core.states import RevenueStates

@@ -15,6 +15,7 @@ from app.handlers.auth_handler import router as auth_router
 from app.handlers.revenue_handler import router as revenue_router
 from app.handlers.admin_handler import router as admin_router
 from app.handlers.plan_handler import router as plan_router
+from app.utils.scheduler import schedule_daily_report
 
 
 async def on_startup():
@@ -37,6 +38,8 @@ async def main():
     dp.include_router(revenue_router)
     dp.include_router(admin_router)
     dp.include_router(plan_router)
+
+    schedule_daily_report(bot)
 
     async def global_error_handler(exception: Exception, update: object = None) -> bool:
 

@@ -1,7 +1,5 @@
 import json
 import logging
-import hashlib
-import asyncio
 from typing import Any, Dict, List, Optional, Union
 from app.core.config import REDIS_DSN
 import redis.asyncio as redis
@@ -21,7 +19,7 @@ except Exception as e:
             logger.warning(f"Mock Redis GET operation: {key }")
             return None
 
-        async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
+        async def set(self, key: str, _value: str, ex: Optional[int] = None) -> bool:
             logger.warning(f"Mock Redis SET operation: {key }, TTL: {ex }")
             return True
 
@@ -126,8 +124,8 @@ async def invalidate_cache(
             return await redis_client.delete(key)
         elif pattern:
             keys = await redis_client.keys(pattern)
-            if keys:
-                return await redis_client.delete(*keys)
+
+            return await redis_client.delete(*keys)
         return 0
     except Exception as e:
         logger.error(f"Error invalidating cache: {e }")

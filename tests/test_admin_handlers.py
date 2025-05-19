@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from aiogram.types import Message, User as TgUser, Chat
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -51,7 +51,7 @@ def session_patch(session):
         async def __aenter__(self):
             return session
 
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
+        async def __aexit__(self, *args):
             pass
 
     with patch("app.handlers.admin_handler.get_session", return_value=SessionContext()):

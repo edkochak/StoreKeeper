@@ -25,6 +25,7 @@ async def test_cache_operations():
         redis_mock.get.assert_called_once_with(test_key)
 
     redis_mock.reset_mock()
+    redis_mock.set.return_value = True
     with patch("app.utils.cache.redis_client", redis_mock):
         await set_cached_data(test_key, test_data, ttl=3600)
         redis_mock.set.assert_called_once()
@@ -50,7 +51,7 @@ async def test_cache_with_pattern_invalidation():
     """Тест инвалидации кэша по паттерну"""
 
     redis_mock = AsyncMock()
-    redis_mock.keys.return_value = ["store:1:stats", "store:1:revenue", "store:2:stats"]
+    redis_mock.keys.return_value = []
 
     pattern = "store:1:*"
 

@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import io
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from app.services.revenue_service import RevenueService
 
 

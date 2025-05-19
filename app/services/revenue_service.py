@@ -5,7 +5,6 @@ import calendar
 import pandas as pd
 from typing import Dict, List, Optional, Tuple, Any, Union
 from sqlalchemy import select, func, and_
-from sqlalchemy.orm import joinedload
 from app.core.database import AsyncSession
 from app.models.revenue import Revenue
 from app.models.store import Store
