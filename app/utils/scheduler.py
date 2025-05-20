@@ -4,26 +4,76 @@ import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from aiogram import Bot
-from aiogram.types import InputFile
-from app.core.config import ADMIN_CHAT_IDS, BOT_TOKEN
+from aiogram.types import BufferedInputFile
+from app.core.config import ADMIN_CHAT_IDS
 from app.core.database import get_session
 from app.services.revenue_service import RevenueService
+from app.utils.matryoshka import create_matryoshka_collection
+from pathlib import Path
+import os
 
 
 async def send_daily_report(bot: Bot):
     """Генерирует отчет и отправляет его всем администраторам"""
-    async with get_session() as session:
-        rev_svc = RevenueService(session)
-        excel_bytes, images = await rev_svc.export_report()
+    try:
 
-    for chat_id in ADMIN_CHAT_IDS:
-        await bot.send_document(
-            chat_id, InputFile(io.BytesIO(excel_bytes), filename="report.xlsx")
+        resources_dir = Path(__file__).parent.parent.parent / "resources"
+        resources_dir.mkdir(exist_ok=True)
+        template_path = str(resources_dir / "matryoshka_template.png")
+
+        if not os.path.exists(template_path):
+            from PIL import Image, ImageDraw
+
+            img = Image.new("RGBA", (300, 500), (255, 255, 255, 0))
+            draw = ImageDraw.Draw(img)
+
+            draw.ellipse((50, 100, 250, 450), outline=(0, 0, 0), width=3)
+            img.save(template_path)
+
+        async with get_session() as session:
+            rev_svc = RevenueService(session)
+            excel_bytes, images = await rev_svc.export_report()
+
+            shops_data = await rev_svc.get_matryoshka_data()
+            shops_data.sort(key=lambda x: x["fill_percent"], reverse=True)
+
+        if not shops_data:
+            return
+
+        matryoshka_buffers = create_matryoshka_collection(
+            template_path, shops_data, layout="vertical", max_per_image=2
         )
-        for name, img_bytes in images.items():
-            await bot.send_photo(
-                chat_id, InputFile(io.BytesIO(img_bytes), filename=name)
+
+        for chat_id in ADMIN_CHAT_IDS:
+
+            await bot.send_document(
+                chat_id,
+                BufferedInputFile(excel_bytes, filename="revenue_report.xlsx"),
+                caption="Подробный отчет по выручке магазинов",
             )
+
+            for i, matryoshka_buf in enumerate(matryoshka_buffers, 1):
+                stores_in_image = shops_data[(i - 1) * 2 : i * 2]
+                stores_names = ", ".join([s["title"] for s in stores_in_image])
+
+                await bot.send_photo(
+                    chat_id,
+                    BufferedInputFile(
+                        matryoshka_buf.getvalue(), filename=f"report_matryoshka_{i}.png"
+                    ),
+                    caption=f"📊 Выполнение плана: {stores_names}",
+                )
+
+    except Exception as e:
+
+        error_message = f"⚠️ Ошибка при генерации ежедневного отчета: {str(e)}"
+        for chat_id in ADMIN_CHAT_IDS:
+            try:
+                await bot.send_message(chat_id, error_message)
+            except Exception:
+                print(
+                    f"Не удалось отправить сообщение администратору {chat_id}: {error_message}"
+                )
 
 
 def schedule_daily_report(
@@ -46,10 +96,3 @@ def schedule_daily_report(
     except RuntimeError:
         pass
     return scheduler
-
-
-if __name__ == "__main__":
-    bot = Bot(token=BOT_TOKEN)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(schedule_daily_report(bot))
-    

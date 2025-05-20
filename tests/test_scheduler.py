@@ -39,13 +39,23 @@ async def test_send_daily_report():
     fake_bot = AsyncMock(spec=Bot)
     fake_bot.send_document = AsyncMock()
     fake_bot.send_photo = AsyncMock()
+    fake_bot.send_message = AsyncMock()
 
     excel_data = b"excelbytes"
     images_data = {"chart1.png": b"img1", "chart2.png": b"img2"}
+    shops_data = [
+        {"title": "Магазин 1", "fill_percent": 80},
+        {"title": "Магазин 2", "fill_percent": 60},
+    ]
+
+    matryoshka_buffer = io.BytesIO(b"matryoshka_data")
 
     class DummyRevService:
         async def export_report(self):
             return excel_data, images_data
+
+        async def get_matryoshka_data(self):
+            return shops_data
 
     mock_session_cm = AsyncMock()
     mock_session_cm.__aenter__.return_value = None
@@ -53,12 +63,26 @@ async def test_send_daily_report():
 
     with patch("app.utils.scheduler.get_session", return_value=mock_session_cm), patch(
         "app.utils.scheduler.RevenueService", return_value=DummyRevService()
-    ), patch("app.utils.scheduler.ADMIN_CHAT_IDS", [100, 200]):
+    ), patch("app.utils.scheduler.ADMIN_CHAT_IDS", [100, 200]), patch(
+        "app.utils.scheduler.create_matryoshka_collection",
+        return_value=[matryoshka_buffer],
+    ), patch(
+        "app.utils.scheduler.os.path.exists", return_value=True
+    ):
+
         await send_daily_report(fake_bot)
 
     assert fake_bot.send_document.call_count == 2
 
-    assert fake_bot.send_photo.call_count == 2 * len(images_data)
+    assert fake_bot.send_photo.call_count == 2
 
-    first_call_args = fake_bot.send_document.call_args_list[0][0]
-    assert first_call_args[0] == 100
+    first_doc_call_args = fake_bot.send_document.call_args_list[0][0]
+    assert first_doc_call_args[0] == 100
+
+    first_photo_call_args = fake_bot.send_photo.call_args_list[0][0]
+    assert first_photo_call_args[0] == 100
+
+    first_photo_call_kwargs = fake_bot.send_photo.call_args_list[0][1]
+    assert "Выполнение плана: Магазин 1, Магазин 2" in first_photo_call_kwargs.get(
+        "caption", ""
+    )
