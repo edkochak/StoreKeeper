@@ -5,7 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from aiogram import Bot
 from aiogram.types import InputFile
-from app.core.config import ADMIN_CHAT_IDS
+from app.core.config import ADMIN_CHAT_IDS, BOT_TOKEN
 from app.core.database import get_session
 from app.services.revenue_service import RevenueService
 
@@ -18,10 +18,12 @@ async def send_daily_report(bot: Bot):
 
     for chat_id in ADMIN_CHAT_IDS:
         await bot.send_document(
-            chat_id, io.BytesIO(excel_bytes), filename="report.xlsx"
+            chat_id, InputFile(io.BytesIO(excel_bytes), filename="report.xlsx")
         )
         for name, img_bytes in images.items():
-            await bot.send_photo(chat_id, io.BytesIO(img_bytes), filename=name)
+            await bot.send_photo(
+                chat_id, InputFile(io.BytesIO(img_bytes), filename=name)
+            )
 
 
 def schedule_daily_report(
@@ -44,3 +46,10 @@ def schedule_daily_report(
     except RuntimeError:
         pass
     return scheduler
+
+
+if __name__ == "__main__":
+    bot = Bot(token=BOT_TOKEN)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(schedule_daily_report(bot))
+    
