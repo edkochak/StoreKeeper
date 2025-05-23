@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+
+test.py
 __pycache__/
 *.py[cod]
 *$py.class
@@ -73,6 +75,5 @@ dump.rdb
 .eggs/
 .pytest_cache/
 .coverage.*
-/test.py
 
 .github/copilot-instructions.md
