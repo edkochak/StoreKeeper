@@ -174,7 +174,7 @@ class MatryoshkaFillBuilder:
 
         left_offset = 20
         text_x = max(left_offset, self.boundaries["x_min"] - text_width - 30)
-        # Поднимаем текст процентов над уровнем заполнения минимум на percent_text_offset пикселей
+
         offset = self.config.get("percent_text_offset", 10)
         text_y = max(self.boundaries["ymin"], self.boundaries["y_fill_start"] - offset)
 

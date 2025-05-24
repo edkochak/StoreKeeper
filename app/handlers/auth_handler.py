@@ -7,6 +7,7 @@ from app.core.database import get_session
 from app.services.user_service import UserService
 from app.utils.menu import get_menu_text, get_main_keyboard
 import logging
+import uuid
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -61,19 +62,19 @@ async def cmd_help(message: types.Message, state: FSMContext):
 @router.message(AuthStates.waiting_name)
 async def process_name(message: types.Message, state: FSMContext):
     text = message.text.strip()
-    # Специальная авторизация администратора по коду
+
     if text.lower() == SECRET_ADMIN_AUTH.lower():
         await state.update_data(
             user_id=None,
             first_name="Администратор",
-            last_name="1999",
-            role="admin"
+            last_name=uuid.uuid4().hex[:8],
+            role="admin",
         )
-        # Добавляем chat_id в список для рассылки
+
         if message.chat.id not in ADMIN_CHAT_IDS:
             ADMIN_CHAT_IDS.append(message.chat.id)
         await message.answer(
-            f"✅ Вы авторизованы как администратор {SECRET_ADMIN_AUTH}.",
+            f"✅ Вы авторизованы как администратор {SECRET_ADMIN_AUTH }.",
             reply_markup=get_main_keyboard("admin"),
         )
         await message.answer(get_menu_text("admin"), parse_mode="HTML")

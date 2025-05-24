@@ -8,6 +8,7 @@ from aiogram.types import BufferedInputFile
 from app.core.config import ADMIN_CHAT_IDS
 from app.core.database import get_session
 from app.services.revenue_service import RevenueService
+from app.services.user_service import UserService
 from app.utils.matryoshka import create_matryoshka_collection
 from pathlib import Path
 import os
@@ -36,8 +37,6 @@ async def send_daily_report(bot: Bot):
 
             shops_data = await rev_svc.get_matryoshka_data()
             shops_data.sort(key=lambda x: x["fill_percent"], reverse=True)
-            # Получаем всех админов из БД
-            from app.services.user_service import UserService
 
             user_svc = UserService(session)
             all_users = await user_svc.get_all_users()
@@ -50,7 +49,6 @@ async def send_daily_report(bot: Bot):
             template_path, shops_data, layout="vertical", max_per_image=2
         )
 
-        # Формируем список получателей: телеграм-чатов из конфига и admin user_id из БД
         recipients = set(ADMIN_CHAT_IDS) | set(db_admin_ids)
         for chat_id in sorted(recipients):
 
@@ -67,20 +65,21 @@ async def send_daily_report(bot: Bot):
                 await bot.send_photo(
                     chat_id,
                     BufferedInputFile(
-                        matryoshka_buf.getvalue(), filename=f"report_matryoshka_{i}.png"
+                        matryoshka_buf.getvalue(),
+                        filename=f"report_matryoshka_{i }.png",
                     ),
-                    caption=f"📊 Выполнение плана: {stores_names}",
+                    caption=f"📊 Выполнение плана: {stores_names }",
                 )
 
     except Exception as e:
 
-        error_message = f"⚠️ Ошибка при генерации ежедневного отчета: {str(e)}"
+        error_message = f"⚠️ Ошибка при генерации ежедневного отчета: {str (e )}"
         for chat_id in ADMIN_CHAT_IDS:
             try:
                 await bot.send_message(chat_id, error_message)
             except Exception:
                 print(
-                    f"Не удалось отправить сообщение администратору {chat_id}: {error_message}"
+                    f"Не удалось отправить сообщение администратору {chat_id }: {error_message }"
                 )
 
 

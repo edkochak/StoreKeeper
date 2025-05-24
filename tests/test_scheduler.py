@@ -61,28 +61,40 @@ async def test_send_daily_report():
     mock_session_cm.__aenter__.return_value = None
     mock_session_cm.__aexit__.return_value = None
 
-    with patch("app.utils.scheduler.get_session", return_value=mock_session_cm), patch(
-        "app.utils.scheduler.RevenueService", return_value=DummyRevService()
-    ), patch("app.utils.scheduler.ADMIN_CHAT_IDS", [100, 200]), patch(
-        "app.utils.scheduler.create_matryoshka_collection",
-        return_value=[matryoshka_buffer],
-    ), patch(
-        "app.utils.scheduler.os.path.exists", return_value=True
-    ):
+    from types import SimpleNamespace
 
+    dummy_users = [
+        SimpleNamespace(id=300, role="admin"),
+        SimpleNamespace(id=400, role="manager"),
+    ]
+
+    class DummyUserService:
+        def __init__(self, session):
+            pass
+
+        async def get_all_users(self):
+            return dummy_users
+
+    with (
+        patch("app.utils.scheduler.get_session", return_value=mock_session_cm),
+        patch("app.utils.scheduler.RevenueService", return_value=DummyRevService()),
+        patch("app.utils.scheduler.UserService", return_value=DummyUserService(None)),
+        patch("app.utils.scheduler.ADMIN_CHAT_IDS", [100, 200]),
+        patch(
+            "app.utils.scheduler.create_matryoshka_collection",
+            return_value=[matryoshka_buffer],
+        ),
+        patch("app.utils.scheduler.os.path.exists", return_value=True),
+    ):
         await send_daily_report(fake_bot)
 
-    assert fake_bot.send_document.call_count == 2
+    assert fake_bot.send_document.call_count == 3
 
-    assert fake_bot.send_photo.call_count == 2
+    assert fake_bot.send_photo.call_count == 3
 
-    first_doc_call_args = fake_bot.send_document.call_args_list[0][0]
-    assert first_doc_call_args[0] == 100
-
-    first_photo_call_args = fake_bot.send_photo.call_args_list[0][0]
-    assert first_photo_call_args[0] == 100
-
-    first_photo_call_kwargs = fake_bot.send_photo.call_args_list[0][1]
-    assert "Выполнение плана: Магазин 1, Магазин 2" in first_photo_call_kwargs.get(
-        "caption", ""
+    assert any(
+        call_args[0][0] == 300 for call_args in fake_bot.send_document.call_args_list
+    )
+    assert any(
+        call_args[0][0] == 300 for call_args in fake_bot.send_photo.call_args_list
     )

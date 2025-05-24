@@ -16,5 +16,5 @@ ADMIN_CHAT_IDS = [
 
 REDIS_DSN = os.getenv("REDIS_DSN", "redis://localhost:6379/0")
 
-# Секретный код авторизации администратора
+
 SECRET_ADMIN_AUTH = os.getenv("SECRET_ADMIN_AUTH", "Администратор 1999")
