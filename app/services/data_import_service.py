@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import MultipleResultsFound
 
 
 class DataImportService:
@@ -51,12 +52,17 @@ class DataImportService:
         manager_id = store.managers[0].id
 
         for record in valid_data:
-            revenue = await revenue_repo.create(
-                amount=record['revenue'],
-                store_id=store_id,
-                manager_id=manager_id,
-                date_=record['date']
-            )
-            imported.append(revenue)
+            try:
+                revenue = await revenue_repo.create(
+                    amount=record['revenue'],
+                    store_id=store_id,
+                    manager_id=manager_id,
+                    date_=record['date']
+                )
+                imported.append(revenue)
+            except MultipleResultsFound:
+                errors.append(f"Дублирование записей для даты {record['date']}")
+            except Exception as e:
+                errors.append(f"Ошибка импорта записи на {record['date']}: {e}")
 
         return imported, errors
