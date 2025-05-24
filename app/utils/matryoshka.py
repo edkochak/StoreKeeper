@@ -58,7 +58,7 @@ class MatryoshkaFillBuilder:
         arr = np.array(mask)
 
         if self.config.get("show_info", False):
-            extra = self.config.get("info_x_offset", 50) + 20
+            extra = self.config.get("info_x_offset", 50) + 80
 
             new_img = Image.new("RGBA", (width + extra, height), (0, 0, 0, 0))
             new_img.paste(self.base_image, (0, 0))
@@ -579,7 +579,7 @@ if __name__ == "__main__":
             "daily_amount": "24 500",
             "day": "15.09.23",
             "total_amount": "187 450",
-            "plan_amount": "300 000",
+            "plan_amount": "300 000 000",
             "fill_color": (70, 130, 180, 200),
         },
         {
@@ -588,7 +588,7 @@ if __name__ == "__main__":
             "daily_amount": "15 800",
             "day": "15.09.23",
             "total_amount": "126 340",
-            "plan_amount": "300 000",
+            "plan_amount": "300 000 000",
             "fill_color": (34, 139, 34, 200),
         },
         {
@@ -597,7 +597,7 @@ if __name__ == "__main__":
             "daily_amount": "8 400",
             "day": "15.09.23",
             "total_amount": "84 200",
-            "plan_amount": "300 000",
+            "plan_amount": "300 000 000",
             "fill_color": (178, 34, 34, 200),
         },
     ]

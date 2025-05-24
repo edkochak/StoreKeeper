@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from app.core.states import AuthStates
-from app.core.config import ADMIN_CHAT_IDS
+from app.core.config import ADMIN_CHAT_IDS, SECRET_ADMIN_AUTH
 from app.core.database import get_session
 from app.services.user_service import UserService
 from app.utils.menu import get_menu_text, get_main_keyboard
@@ -60,7 +60,26 @@ async def cmd_help(message: types.Message, state: FSMContext):
 
 @router.message(AuthStates.waiting_name)
 async def process_name(message: types.Message, state: FSMContext):
-    parts = message.text.strip().split()
+    text = message.text.strip()
+    # Специальная авторизация администратора по коду
+    if text.lower() == SECRET_ADMIN_AUTH.lower():
+        await state.update_data(
+            user_id=None,
+            first_name="Администратор",
+            last_name="1999",
+            role="admin"
+        )
+        # Добавляем chat_id в список для рассылки
+        if message.chat.id not in ADMIN_CHAT_IDS:
+            ADMIN_CHAT_IDS.append(message.chat.id)
+        await message.answer(
+            f"✅ Вы авторизованы как администратор {SECRET_ADMIN_AUTH}.",
+            reply_markup=get_main_keyboard("admin"),
+        )
+        await message.answer(get_menu_text("admin"), parse_mode="HTML")
+        await state.set_state(None)
+        return
+    parts = text.split()
     if len(parts) < 2:
         await message.answer("Пожалуйста, введите имя и фамилию через пробел:")
         return

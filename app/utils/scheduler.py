@@ -36,6 +36,12 @@ async def send_daily_report(bot: Bot):
 
             shops_data = await rev_svc.get_matryoshka_data()
             shops_data.sort(key=lambda x: x["fill_percent"], reverse=True)
+            # Получаем всех админов из БД
+            from app.services.user_service import UserService
+
+            user_svc = UserService(session)
+            all_users = await user_svc.get_all_users()
+            db_admin_ids = [user.id for user in all_users if user.role == "admin"]
 
         if not shops_data:
             return
@@ -44,7 +50,9 @@ async def send_daily_report(bot: Bot):
             template_path, shops_data, layout="vertical", max_per_image=2
         )
 
-        for chat_id in ADMIN_CHAT_IDS:
+        # Формируем список получателей: телеграм-чатов из конфига и admin user_id из БД
+        recipients = set(ADMIN_CHAT_IDS) | set(db_admin_ids)
+        for chat_id in sorted(recipients):
 
             await bot.send_document(
                 chat_id,

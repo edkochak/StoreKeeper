@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from typing import List
 
-load_dotenv()
+load_dotenv(override=True)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -15,3 +15,6 @@ ADMIN_CHAT_IDS = [
 
 
 REDIS_DSN = os.getenv("REDIS_DSN", "redis://localhost:6379/0")
+
+# Секретный код авторизации администратора
+SECRET_ADMIN_AUTH = os.getenv("SECRET_ADMIN_AUTH", "Администратор 1999")
