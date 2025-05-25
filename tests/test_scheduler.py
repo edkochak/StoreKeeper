@@ -64,8 +64,15 @@ async def test_send_daily_report():
     from types import SimpleNamespace
 
     dummy_users = [
-        SimpleNamespace(id=300, role="admin", chat_id=300),
-        SimpleNamespace(id=400, role="manager", chat_id=400),
+        SimpleNamespace(
+            id=300, role="admin", chat_id=300, first_name="Admin", last_name="User"
+        ),
+        SimpleNamespace(
+            id=400, role="subscriber", chat_id=400, first_name="Sub", last_name="User"
+        ),
+        SimpleNamespace(
+            id=500, role="manager", chat_id=500, first_name="Manager", last_name="User"
+        ),
     ]
 
     class DummyUserService:
@@ -88,13 +95,27 @@ async def test_send_daily_report():
     ):
         await send_daily_report(fake_bot)
 
-    assert fake_bot.send_document.call_count == 3
+    assert fake_bot.send_document.call_count == 4
 
-    assert fake_bot.send_photo.call_count == 3
+    assert fake_bot.send_photo.call_count == 4
 
     assert any(
         call_args[0][0] == 300 for call_args in fake_bot.send_document.call_args_list
     )
     assert any(
         call_args[0][0] == 300 for call_args in fake_bot.send_photo.call_args_list
+    )
+
+    assert any(
+        call_args[0][0] == 400 for call_args in fake_bot.send_document.call_args_list
+    )
+    assert any(
+        call_args[0][0] == 400 for call_args in fake_bot.send_photo.call_args_list
+    )
+
+    assert not any(
+        call_args[0][0] == 500 for call_args in fake_bot.send_document.call_args_list
+    )
+    assert not any(
+        call_args[0][0] == 500 for call_args in fake_bot.send_photo.call_args_list
     )
