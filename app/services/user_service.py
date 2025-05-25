@@ -75,8 +75,13 @@ class UserService:
         await self.repo.delete_user(user)
 
     async def update_chat_id(self, user: User, chat_id: int) -> User:
-        """Привязать Telegram chat_id к пользователю"""
-        return await self.repo.update_chat_id(user, chat_id)
+        """Привязать Telegram chat_id к пользователю (обновляет только если отличается)"""
+        if user.chat_id != chat_id:
+            logger.info(
+                f"Обновление chat_id для пользователя {user .first_name } {user .last_name }: {user .chat_id } -> {chat_id }"
+            )
+            return await self.repo.update_chat_id(user, chat_id)
+        return user
 
     def can_view_reports(self, user: User) -> bool:
         """

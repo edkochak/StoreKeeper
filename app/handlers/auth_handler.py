@@ -27,9 +27,10 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
             user = await user_service.get_by_name(first_name, last_name)
             if not user:
-
                 user = await user_service.get_or_create(first_name, last_name, "admin")
                 logger.info(f"Автоматически создан администратор: {first_name }")
+
+            user = await user_service.update_chat_id(user, message.chat.id)
 
         await state.update_data(
             user_id=user.id, first_name=first_name, last_name=last_name, role="admin"

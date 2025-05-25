@@ -16,6 +16,7 @@ from app.handlers.revenue_handler import router as revenue_router
 from app.handlers.admin_handler import router as admin_router
 from app.handlers.plan_handler import router as plan_router
 from app.utils.scheduler import schedule_daily_report
+from app.middleware import UpdateChatIdMiddleware
 
 
 async def on_startup():
@@ -33,6 +34,8 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
 
     dp = Dispatcher(storage=storage)
+
+    dp.message.middleware(UpdateChatIdMiddleware())
 
     dp.include_router(auth_router)
     dp.include_router(revenue_router)

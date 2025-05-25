@@ -118,7 +118,7 @@ if __name__ == "__main__":
     import app.core.config as config
 
     bot = Bot(token=config.BOT_TOKEN)
-
+    ADMIN_CHAT_IDS.pop(1)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(send_daily_report(bot))
     loop.close()
