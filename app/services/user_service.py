@@ -74,6 +74,10 @@ class UserService:
     async def delete_user(self, user: User) -> None:
         await self.repo.delete_user(user)
 
+    async def update_chat_id(self, user: User, chat_id: int) -> User:
+        """Привязать Telegram chat_id к пользователю"""
+        return await self.repo.update_chat_id(user, chat_id)
+
     def can_view_reports(self, user: User) -> bool:
         """
         Проверяет, может ли пользователь просматривать отчеты.

@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from app.core.states import AuthStates
-from app.core.config import ADMIN_CHAT_IDS, SECRET_ADMIN_AUTH
+from app.core.config import ADMIN_CHAT_IDS, SECRET_SUBSCRIBER_AUTH
 from app.core.database import get_session
 from app.services.user_service import UserService
 from app.utils.menu import get_menu_text, get_main_keyboard
@@ -63,30 +63,43 @@ async def cmd_help(message: types.Message, state: FSMContext):
 async def process_name(message: types.Message, state: FSMContext):
     text = message.text.strip()
 
-    if text.lower() == SECRET_ADMIN_AUTH.lower():
-        await state.update_data(
-            user_id=None,
-            first_name="Администратор",
-            last_name=uuid.uuid4().hex[:8],
-            role="admin",
-        )
+    if text == SECRET_SUBSCRIBER_AUTH:
+        async with get_session() as session:
+            user_service = UserService(session)
 
-        if message.chat.id not in ADMIN_CHAT_IDS:
-            ADMIN_CHAT_IDS.append(message.chat.id)
-        await message.answer(
-            f"✅ Вы авторизованы как администратор {SECRET_ADMIN_AUTH }.",
-            reply_markup=get_main_keyboard("admin"),
-        )
-        await message.answer(get_menu_text("admin"), parse_mode="HTML")
-        await state.set_state(None)
-        return
+            first_name = "Subscriber"
+            last_name = str(message.chat.id)
+
+            user = await user_service.get_or_create(first_name, last_name, "subscriber")
+
+            await user_service.update_chat_id(user, message.chat.id)
+
+            logger.info(
+                "Подписчик авторизован: %s %s (chat_id: %s)",
+                first_name,
+                last_name,
+                message.chat.id,
+            )
+
+            await state.update_data(
+                user_id=user.id,
+                first_name=first_name,
+                last_name=last_name,
+                role="subscriber",
+            )
+
+            await message.answer(
+                "✅ Вы успешно подписались на ежедневную рассылку отчетов."
+            )
+            await state.set_state(None)
+            return
+
     parts = text.split()
     if len(parts) < 2:
         await message.answer("Пожалуйста, введите имя и фамилию через пробел:")
         return
 
     first_name, last_name = parts[0], " ".join(parts[1:])
-    role = "admin" if message.chat.id in ADMIN_CHAT_IDS else "manager"
 
     async with get_session() as session:
         user_service = UserService(session)
@@ -99,9 +112,13 @@ async def process_name(message: types.Message, state: FSMContext):
             await state.clear()
             return
 
-        if user.role != role:
+        role = user.role
+
+        await user_service.update_chat_id(user, message.chat.id)
+
+        if role not in ("admin", "manager", "subscriber"):
             await message.answer(
-                f"❌ Авторизация не удалась: несоответствие роли пользователя."
+                f"❌ Авторизация не удалась: неизвестная роль {role }."
             )
             await state.clear()
             return
@@ -110,6 +127,13 @@ async def process_name(message: types.Message, state: FSMContext):
     await state.update_data(
         user_id=user.id, first_name=first_name, last_name=last_name, role=role
     )
+
+    if role == "subscriber":
+        await message.answer(
+            "✅ Вы успешно подписались на ежедневную рассылку отчетов.",
+        )
+        await state.set_state(None)
+        return
 
     store_info = f", ваш магазин: {user .store .name }" if user.store_id else ""
     await message.answer(

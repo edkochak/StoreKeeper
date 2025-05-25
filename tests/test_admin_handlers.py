@@ -147,7 +147,7 @@ async def test_cmd_edit_manager(create_message, state, session_patch):
 
     with patch(
         "app.services.user_service.UserService.get_all_users", return_value=[manager]
-    ):
+    ), patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [123456789]):
 
         message = create_message()
         await cmd_edit_manager(message, state)

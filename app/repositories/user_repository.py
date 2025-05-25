@@ -117,3 +117,11 @@ class UserRepository:
     async def delete_user(self, user: User) -> None:
         await self.session.delete(user)
         await self.session.commit()
+
+    async def update_chat_id(self, user: User, chat_id: int) -> User:
+        """Обновить Telegram chat_id пользователя"""
+        user.chat_id = chat_id
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user

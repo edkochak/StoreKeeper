@@ -64,8 +64,8 @@ async def test_send_daily_report():
     from types import SimpleNamespace
 
     dummy_users = [
-        SimpleNamespace(id=300, role="admin"),
-        SimpleNamespace(id=400, role="manager"),
+        SimpleNamespace(id=300, role="admin", chat_id=300),
+        SimpleNamespace(id=400, role="manager", chat_id=400),
     ]
 
     class DummyUserService:

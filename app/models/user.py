@@ -11,6 +11,7 @@ class User(Base):
     last_name = Column(String, nullable=False)
     role = Column(String, nullable=False)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
+    chat_id = Column(Integer, unique=True, nullable=True)
 
     store = relationship("Store", back_populates="managers")
     revenues = relationship("Revenue", back_populates="manager")

@@ -40,7 +40,17 @@ async def send_daily_report(bot: Bot):
 
             user_svc = UserService(session)
             all_users = await user_svc.get_all_users()
-            db_admin_ids = [user.id for user in all_users if user.role == "admin"]
+            db_admin_ids = []
+            subscriber_ids = []
+            for u in all_users:
+                if u.role == "admin":
+                    cid = u.chat_id
+                    if cid:
+                        db_admin_ids.append(cid)
+                if u.role == "subscriber":
+                    cid = u.chat_id
+                    if cid:
+                        subscriber_ids.append(cid)
 
         if not shops_data:
             return
@@ -49,9 +59,8 @@ async def send_daily_report(bot: Bot):
             template_path, shops_data, layout="vertical", max_per_image=2
         )
 
-        recipients = set(ADMIN_CHAT_IDS) | set(db_admin_ids)
+        recipients = set(ADMIN_CHAT_IDS) | set(db_admin_ids) | set(subscriber_ids)
         for chat_id in sorted(recipients):
-
             await bot.send_document(
                 chat_id,
                 BufferedInputFile(excel_bytes, filename="revenue_report.xlsx"),
@@ -103,3 +112,13 @@ def schedule_daily_report(
     except RuntimeError:
         pass
     return scheduler
+
+
+if __name__ == "__main__":
+    import app.core.config as config
+
+    bot = Bot(token=config.BOT_TOKEN)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(send_daily_report(bot))
+    loop.close()

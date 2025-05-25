@@ -444,11 +444,6 @@ async def process_manager_store(message: types.Message, state: FSMContext):
 @router.message(Command("editstore"))
 async def cmd_edit_store(message: types.Message, state: FSMContext):
     """Редактирование существующего магазина"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
-        await message.answer(
-            "У вас нет прав администратора для выполнения этой команды."
-        )
-        return
 
     async with get_session() as session:
         stores = await StoreService(session).list_stores()

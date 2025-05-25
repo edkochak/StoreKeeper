@@ -18,3 +18,4 @@ REDIS_DSN = os.getenv("REDIS_DSN", "redis://localhost:6379/0")
 
 
 SECRET_ADMIN_AUTH = os.getenv("SECRET_ADMIN_AUTH", "Администратор 1999")
+SECRET_SUBSCRIBER_AUTH = os.getenv("SECRET_SUBSCRIBER_AUTH", "Подписаться")
