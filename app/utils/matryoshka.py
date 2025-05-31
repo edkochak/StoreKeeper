@@ -351,7 +351,7 @@ class MatryoshkaCompositionBuilder:
             "meniscus_curve_factor": 6,
             "show_percent": True,
             "font_size": 100,
-            "info_font_size": 48,
+            "info_font_size": 60,
             "info_x_offset": 80,
         }
 

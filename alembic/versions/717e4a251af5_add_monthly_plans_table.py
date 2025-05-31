@@ -25,7 +25,7 @@ def upgrade() -> None:
         "monthly_plans",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("store_id", sa.Integer, sa.ForeignKey("stores.id"), nullable=False),
-        sa.Column("month_year", sa.String, nullable=False),
+        sa.Column("month_year", sa.Date, nullable=False),
         sa.Column("plan_amount", sa.Float, nullable=False),
         sa.UniqueConstraint("store_id", "month_year", name="uq_store_month_plan"),
     )

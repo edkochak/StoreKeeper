@@ -33,6 +33,8 @@ async def cmd_report(message: types.Message, state: FSMContext):
         )
         return
 
+    await state.clear()
+
     user_data = await state.get_data()
     if not user_data.get("user_id"):
         await message.answer("Пожалуйста, сначала авторизуйтесь через /start")
@@ -103,6 +105,8 @@ async def cmd_assign_manager(message: types.Message, state: FSMContext):
             "У вас нет прав администратора для выполнения этой команды."
         )
         return
+
+    await state.clear()
 
     async with get_session() as session:
         user_service = UserService(session)
@@ -446,6 +450,8 @@ async def process_manager_store(message: types.Message, state: FSMContext):
 async def cmd_edit_store(message: types.Message, state: FSMContext):
     """Редактирование существующего магазина"""
 
+    await state.clear()
+
     async with get_session() as session:
         stores = await StoreService(session).list_stores()
 
@@ -592,6 +598,8 @@ async def cmd_edit_manager(message: types.Message, state: FSMContext):
             "У вас нет прав администратора для выполнения этой команды."
         )
         return
+
+    await state.clear()
 
     async with get_session() as session:
         user_service = UserService(session)
@@ -826,6 +834,8 @@ async def cmd_edit_revenue(message: types.Message, state: FSMContext):
             "У вас нет прав администратора для выполнения этой команды."
         )
         return
+
+    await state.clear()
 
     async with get_session() as session:
         stores = await StoreService(session).list_stores()
