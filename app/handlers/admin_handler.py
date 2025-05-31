@@ -35,11 +35,6 @@ async def cmd_report(message: types.Message, state: FSMContext):
 
     await state.clear()
 
-    user_data = await state.get_data()
-    if not user_data.get("user_id"):
-        await message.answer("Пожалуйста, сначала авторизуйтесь через /start")
-        return
-
     msg = await message.answer("Генерируется отчет, подождите...")
 
     resources_dir = Path(__file__).parent.parent.parent / "resources"
