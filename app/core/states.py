@@ -13,7 +13,14 @@ class RevenueStates(StatesGroup):
 
 class PlanStates(StatesGroup):
     waiting_store = State()
+    waiting_month = State()
     waiting_plan = State()
+
+
+class EditRevenueStates(StatesGroup):
+    waiting_store = State()
+    waiting_date = State()
+    waiting_amount = State()
 
 
 class AssignStates(StatesGroup):

@@ -8,7 +8,9 @@ from sqlalchemy import select, func, and_
 from app.core.database import AsyncSession
 from app.models.revenue import Revenue
 from app.models.store import Store
+from app.models.monthly_plan import MonthlyPlan
 from app.repositories.revenue_repository import RevenueRepository
+from app.repositories.monthly_plan_repository import MonthlyPlanRepository
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,7 @@ class RevenueService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = RevenueRepository(session)
+        self.monthly_plan_repo = MonthlyPlanRepository(session)
 
     def _get_color_by_progress(self, percent: int) -> tuple:
         """
@@ -187,17 +190,19 @@ class RevenueService:
             last_amount = stat["last_revenue"]["amount"]
             last_date = stat["last_revenue"]["date"]
 
-            last_amount_formatted = f"{int (last_amount ):,}".replace(",", " ")
-
             if last_date:
 
+                last_amount_formatted = f"{int (last_amount ):,}".replace(",", " ")
                 try:
                     date_obj = datetime.date.fromisoformat(last_date)
                     last_date_formatted = date_obj.strftime("%d.%m.%y")
                 except (ValueError, TypeError):
                     last_date_formatted = last_date
             else:
-                last_date_formatted = "Н/Д"
+
+                last_amount_formatted = "Нет данных"
+                today = datetime.date.today()
+                last_date_formatted = f"Нет данных за {today .strftime ('%d.%m.%y')}"
 
             result.append(
                 {
@@ -296,12 +301,16 @@ class RevenueService:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_status(self, store_id: int) -> Optional[Dict[str, Any]]:
+    async def get_status(
+        self, store_id: int, month: Optional[int] = None, year: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Получает статус выполнения плана для магазина.
 
         Args:
             store_id: ID магазина
+            month: Номер месяца (1-12), если не указан, используется текущий месяц
+            year: Год, если не указан, используется текущий год
 
         Returns:
             Optional[Dict[str, Any]]: Словарь со статусом или None, если данные не найдены
@@ -314,7 +323,12 @@ class RevenueService:
         if not store:
             return None
 
-        total = await self.get_month_total(store_id)
+        now = datetime.datetime.now()
+        month = month or now.month
+        year = year or now.year
+
+        total = await self.get_month_total(store_id, month, year)
+        plan = await self.get_monthly_plan(store_id, month, year)
 
         query = (
             select(Revenue)
@@ -325,9 +339,9 @@ class RevenueService:
         result = await self.session.execute(query)
         last_revenue = result.scalar_one_or_none()
 
-        percent = int((total / store.plan * 100) if store.plan > 0 else 0)
+        percent = int((total / plan * 100) if plan > 0 else 0)
 
-        status = {"total": total, "plan": store.plan, "percent": percent}
+        status = {"total": total, "plan": plan, "percent": percent}
 
         if last_revenue:
             status["last_date"] = last_revenue.date.isoformat()
@@ -413,22 +427,28 @@ class RevenueService:
         stores = result.scalars().all()
 
         stats = []
+        today = datetime.date.today()
+
         for store in stores:
 
-            total_query = select(func.sum(Revenue.amount)).where(
-                Revenue.store_id == store.id
-            )
-            total_result = await self.session.execute(total_query)
-            total = total_result.scalar() or 0.0
+            total = await self.get_month_total(store.id)
 
-            last_query = (
+            today_query = (
                 select(Revenue)
-                .where(Revenue.store_id == store.id)
-                .order_by(Revenue.date.desc())
+                .where(Revenue.store_id == store.id, Revenue.date == today)
                 .limit(1)
             )
-            last_result = await self.session.execute(last_query)
-            last_revenue = last_result.scalar_one_or_none()
+            today_result = await self.session.execute(today_query)
+            today_revenue = today_result.scalar_one_or_none()
+
+            if today_revenue:
+
+                display_amount = today_revenue.amount
+                display_date = today.isoformat()
+            else:
+
+                display_amount = 0.0
+                display_date = None
 
             stats.append(
                 {
@@ -437,13 +457,8 @@ class RevenueService:
                     "total": total,
                     "plan": store.plan,
                     "last_revenue": {
-                        "amount": last_revenue.amount if last_revenue else 0.0,
-                        "date": (
-                            last_revenue.date.isoformat()
-                            if last_revenue
-                            and isinstance(last_revenue.date, datetime.date)
-                            else last_revenue.date if last_revenue else None
-                        ),
+                        "amount": display_amount,
+                        "date": display_date,
                     },
                 }
             )
@@ -463,3 +478,79 @@ class RevenueService:
         query = select(Store).where(Store.id == store_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_monthly_plan(self, store_id: int, month: int, year: int) -> float:
+        """
+        Получает план на месяц для магазина.
+
+        Args:
+            store_id: ID магазина
+            month: Номер месяца (1-12)
+            year: Год
+
+        Returns:
+            float: План на месяц или 0.0 если план не найден
+        """
+        month_date = datetime.date(year, month, 1)
+        plan = await self.monthly_plan_repo.get_plan(store_id, month_date)
+
+        if plan:
+            return plan.plan_amount
+
+        query = select(Store).where(Store.id == store_id)
+        result = await self.session.execute(query)
+        store = result.scalar_one_or_none()
+
+        return store.plan if store else 0.0
+
+    async def set_monthly_plan(
+        self, store_id: int, month: int, year: int, plan_amount: float
+    ) -> bool:
+        """
+        Устанавливает план на месяц для магазина.
+
+        Args:
+            store_id: ID магазина
+            month: Номер месяца (1-12)
+            year: Год
+            plan_amount: Сумма плана
+
+        Returns:
+            bool: True если план успешно установлен
+        """
+        month_date = datetime.date(year, month, 1)
+        plan = await self.monthly_plan_repo.update_plan(
+            store_id, month_date, plan_amount
+        )
+        return plan is not None
+
+    async def update_revenue(self, revenue_id: int, new_amount: float) -> bool:
+        """
+        Обновляет сумму выручки.
+
+        Args:
+            revenue_id: ID записи выручки
+            new_amount: Новая сумма
+
+        Returns:
+            bool: True если обновление прошло успешно
+        """
+        try:
+            result = await self.session.execute(
+                select(Revenue).where(Revenue.id == revenue_id)
+            )
+            revenue = result.scalar_one_or_none()
+
+            if revenue:
+                revenue.amount = new_amount
+                await self.session.commit()
+                logger.info(f"Обновлена выручка ID {revenue_id }: {new_amount }")
+                return True
+            else:
+                logger.warning(f"Выручка с ID {revenue_id } не найдена")
+                return False
+
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(f"Ошибка обновления выручки: {e }")
+            return False

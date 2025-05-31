@@ -83,6 +83,16 @@ class UserService:
             return await self.repo.update_chat_id(user, chat_id)
         return user
 
+    async def get_by_store_id(self, store_id: int) -> List[User]:
+        """Получить всех пользователей, привязанных к магазину"""
+        stmt = (
+            select(User)
+            .options(selectinload(User.store))
+            .filter(User.store_id == store_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
     def can_view_reports(self, user: User) -> bool:
         """
         Проверяет, может ли пользователь просматривать отчеты.

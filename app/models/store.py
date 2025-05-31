@@ -12,3 +12,4 @@ class Store(Base):
 
     revenues = relationship("Revenue", back_populates="store")
     managers = relationship("User", back_populates="store")
+    monthly_plans = relationship("MonthlyPlan", back_populates="store")

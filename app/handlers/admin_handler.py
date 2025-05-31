@@ -9,6 +9,7 @@ from app.core.states import (
     CreateManagerStates,
     EditStoreStates,
     EditManagerStates,
+    EditRevenueStates,
 )
 from app.core.database import get_session
 from app.services.store_service import StoreService
@@ -813,5 +814,222 @@ async def process_edit_manager_value(message: types.Message, state: FSMContext):
                     f"✅ Менеджер '{first_name } {last_name }' теперь привязан к магазину '{new_value }'.",
                     reply_markup=get_main_keyboard("admin"),
                 )
+
+    await state.clear()
+
+
+@router.message(Command("editrevenue"))
+async def cmd_edit_revenue(message: types.Message, state: FSMContext):
+    """Корректировка выручки любого магазина за любой день администратором"""
+    if message.chat.id not in ADMIN_CHAT_IDS:
+        await message.answer(
+            "У вас нет прав администратора для выполнения этой команды."
+        )
+        return
+
+    async with get_session() as session:
+        stores = await StoreService(session).list_stores()
+
+    if not stores:
+        await message.answer("В системе нет магазинов.")
+        return
+
+    kb = ReplyKeyboardBuilder()
+    for store in stores:
+        kb.button(text=store.name)
+    kb.adjust(2)
+
+    await message.answer(
+        "Выберите магазин для корректировки выручки:",
+        reply_markup=kb.as_markup(resize_keyboard=True),
+    )
+    await state.set_state(EditRevenueStates.waiting_store)
+
+
+@router.message(EditRevenueStates.waiting_store)
+async def process_edit_revenue_store(message: types.Message, state: FSMContext):
+    """Обработка выбора магазина для корректировки выручки"""
+    store_name = message.text
+
+    async with get_session() as session:
+        store_service = StoreService(session)
+        store = await store_service.get_by_name(store_name)
+
+        if not store:
+            await message.answer("Магазин не найден. Выберите магазин из списка выше.")
+            return
+
+    await state.update_data(store_id=store.id, store_name=store_name)
+
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    import datetime
+
+    kb = InlineKeyboardBuilder()
+    today = datetime.date.today()
+
+    for i in range(30):
+        date_obj = today - datetime.timedelta(days=i)
+        button_text = date_obj.strftime("%d.%m.%Y")
+        callback_data = f"editrev_date_{date_obj .isoformat ()}"
+        kb.button(text=button_text, callback_data=callback_data)
+
+    kb.adjust(5)
+
+    await message.answer(
+        f"Выберите дату для корректировки выручки магазина {store_name }:",
+        reply_markup=kb.as_markup(),
+    )
+    await state.set_state(EditRevenueStates.waiting_date)
+
+
+@router.message(EditRevenueStates.waiting_date)
+async def process_edit_revenue_date_message(message: types.Message, state: FSMContext):
+    """Альтернативный обработчик выбора даты через обычное сообщение (для тестов)"""
+    from datetime import datetime
+
+    try:
+
+        date_obj = datetime.strptime(message.text, "%d.%m.%Y").date()
+        date_str = date_obj.isoformat()
+    except ValueError:
+        try:
+
+            date_obj = datetime.fromisoformat(message.text).date()
+            date_str = date_obj.isoformat()
+        except ValueError:
+            await message.answer("Неверный формат даты. Используйте формат ДД.ММ.ГГГГ")
+            return
+
+    await state.update_data(revenue_date=date_str, selected_date=date_str)
+
+    data = await state.get_data()
+    store_name = data.get("store_name")
+    store_id = data.get("store_id")
+
+    revenue_date = date_obj
+
+    async with get_session() as session:
+        revenue_service = RevenueService(session)
+        existing_revenue = await revenue_service.get_revenue(store_id, revenue_date)
+
+        if existing_revenue:
+            current_amount = existing_revenue.amount
+            await message.answer(
+                f"Текущая выручка магазина {store_name } за {revenue_date .strftime ('%d.%m.%Y')}: {current_amount }\n\n"
+                f"Введите новую сумму выручки:"
+            )
+            await state.update_data(revenue_id=existing_revenue.id)
+        else:
+            await message.answer(
+                f"За {revenue_date .strftime ('%d.%m.%Y')} выручка для магазина {store_name } не найдена.\n\n"
+                f"Введите сумму выручки для создания новой записи:"
+            )
+
+    await state.set_state(EditRevenueStates.waiting_amount)
+
+
+@router.callback_query(EditRevenueStates.waiting_date)
+async def process_edit_revenue_date(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка выбора даты для корректировки выручки"""
+
+    date_str = callback.data.replace("editrev_date_", "")
+
+    await state.update_data(revenue_date=date_str, selected_date=date_str)
+
+    data = await state.get_data()
+    store_name = data.get("store_name")
+    store_id = data.get("store_id")
+
+    from datetime import datetime
+
+    revenue_date = datetime.fromisoformat(date_str).date()
+
+    async with get_session() as session:
+        revenue_service = RevenueService(session)
+        existing_revenue = await revenue_service.get_revenue(store_id, revenue_date)
+
+        if existing_revenue:
+            current_amount = existing_revenue.amount
+            await callback.message.answer(
+                f"Текущая выручка магазина {store_name } за {revenue_date .strftime ('%d.%m.%Y')}: {current_amount }\n\n"
+                f"Введите новую сумму выручки:"
+            )
+            await state.update_data(revenue_id=existing_revenue.id)
+        else:
+            await callback.message.answer(
+                f"За {revenue_date .strftime ('%d.%m.%Y')} выручка для магазина {store_name } не найдена.\n\n"
+                f"Введите сумму выручки для создания новой записи:"
+            )
+
+    await callback.answer()
+    await state.set_state(EditRevenueStates.waiting_amount)
+
+
+@router.message(EditRevenueStates.waiting_amount)
+async def process_edit_revenue_amount(message: types.Message, state: FSMContext):
+    """Обработка ввода новой суммы выручки"""
+    try:
+        amount = float(message.text.replace(",", "."))
+        if amount < 0:
+            await message.answer(
+                "Сумма выручки не может быть отрицательной. Введите корректную сумму:"
+            )
+            return
+    except ValueError:
+        await message.answer("Неверный формат числа. Пожалуйста, введите число:")
+        return
+
+    data = await state.get_data()
+    store_id = data.get("store_id")
+    store_name = data.get("store_name")
+    revenue_date_str = data.get("revenue_date")
+    revenue_id = data.get("revenue_id")
+
+    from datetime import datetime
+
+    revenue_date = datetime.fromisoformat(revenue_date_str).date()
+
+    async with get_session() as session:
+        revenue_service = RevenueService(session)
+
+        if revenue_id:
+
+            success = await revenue_service.update_revenue(revenue_id, amount)
+            action = "обновлена"
+        else:
+
+            user_service = UserService(session)
+
+            managers = await user_service.get_by_store_id(store_id)
+            if managers:
+                manager_id = managers[0].id
+            else:
+
+                system_manager = await user_service.get_or_create(
+                    "Система", "Администратор", "manager", store_id=store_id
+                )
+                manager_id = system_manager.id
+
+            revenue = await revenue_service.create_revenue(
+                amount, store_id, manager_id, revenue_date
+            )
+            success = revenue is not None
+            action = "создана"
+
+        if success:
+            logger.info(
+                f"Администратор {message .from_user .id } {action } выручку для магазина {store_name } "
+                f"на {revenue_date }: {amount }"
+            )
+
+            await message.answer(
+                f"✅ Выручка магазина {store_name } за {revenue_date .strftime ('%d.%m.%Y')} {action }: {amount }",
+                reply_markup=get_main_keyboard("admin"),
+            )
+        else:
+            await message.answer(
+                f"❌ Ошибка при изменении выручки. Попробуйте снова.",
+                reply_markup=get_main_keyboard("admin"),
+            )
 
     await state.clear()
