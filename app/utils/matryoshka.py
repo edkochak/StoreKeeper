@@ -58,7 +58,7 @@ class MatryoshkaFillBuilder:
         arr = np.array(mask)
 
         if self.config.get("show_info", False):
-            extra = self.config.get("info_x_offset", 50) + 160
+            extra = self.config.get("info_x_offset", 50) + 300
 
             new_img = Image.new("RGBA", (width + extra, height), (0, 0, 0, 0))
             new_img.paste(self.base_image, (0, 0))
