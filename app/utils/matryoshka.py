@@ -352,7 +352,7 @@ class MatryoshkaCompositionBuilder:
             "show_percent": True,
             "font_size": 100,
             "info_font_size": 60,
-            "info_x_offset": 80,
+            "info_x_offset": 100,
         }
 
         with Image.open(template_image_path) as img:

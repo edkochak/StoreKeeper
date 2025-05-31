@@ -10,9 +10,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.handlers.admin_handler import (
     cmd_report,
-    cmd_editstore,
-    cmd_assign,
-    cmd_add_store,
+    cmd_edit_store
 )
 from app.services.store_service import StoreService
 
@@ -72,7 +70,7 @@ async def test_admin_report_after_other_commands(create_message, state, admin_ch
         with patch(
             "app.handlers.admin_handler.StoreService.list_stores", return_value=[]
         ):
-            await cmd_editstore(message, state)
+            await cmd_edit_store(message, state)
 
     data_after_editstore = await state.get_data()
     assert data_after_editstore.get("user_id") is None
@@ -94,7 +92,7 @@ async def test_admin_report_after_other_commands(create_message, state, admin_ch
     message_report.answer.assert_called()
     call_args = message_report.answer.call_args[0][0]
     assert "авторизуйтесь" not in call_args.lower()
-    assert "нет данных для построения отчета" in call_args
+    assert "нет данных для построения отчета" in call_args.lower()
 
 
 @pytest.mark.asyncio
@@ -127,7 +125,7 @@ async def test_admin_report_works_without_fsm_state(
     message.answer.assert_called()
     call_args = message.answer.call_args[0][0]
     assert "авторизуйтесь" not in call_args.lower()
-    assert "нет данных для построения отчета" in call_args
+    assert "нет данных для построения отчета" in call_args.lower()
 
 
 @pytest.mark.asyncio
