@@ -432,6 +432,7 @@ class RevenueService:
         for store in stores:
 
             total = await self.get_month_total(store.id)
+            plan = await self.get_monthly_plan(store.id)
 
             today_query = (
                 select(Revenue)
@@ -455,7 +456,7 @@ class RevenueService:
                     "store_id": store.id,
                     "store_name": store.name,
                     "total": total,
-                    "plan": store.plan,
+                    "plan": plan,
                     "last_revenue": {
                         "amount": display_amount,
                         "date": display_date,
