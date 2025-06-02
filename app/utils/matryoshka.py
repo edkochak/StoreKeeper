@@ -345,13 +345,14 @@ class MatryoshkaCompositionBuilder:
         self.layout_strategy = LayoutStrategy.VERTICAL
         self.max_per_image = 2
         self.padding = 0
+        # Увеличиваем размер шрифта для информационного текста справа
         self.global_config = {
             "meniscus_width_factor": 0.30,
             "meniscus_max_height": 30,
             "meniscus_curve_factor": 6,
             "show_percent": True,
             "font_size": 100,
-            "info_font_size": 60,
+            "info_font_size": 80,
             "info_x_offset": 100,
         }
 
