@@ -295,8 +295,11 @@ class RevenueService:
         else:
             date_obj = date_str
 
-        query = select(Revenue).where(
-            Revenue.store_id == store_id, Revenue.date == date_obj
+        query = (
+            select(Revenue)
+            .where(Revenue.store_id == store_id, Revenue.date == date_obj)
+            .order_by(Revenue.id.desc())
+            .limit(1)
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
@@ -437,6 +440,7 @@ class RevenueService:
             today_query = (
                 select(Revenue)
                 .where(Revenue.store_id == store.id, Revenue.date == today)
+                .order_by(Revenue.id.desc())
                 .limit(1)
             )
             today_result = await self.session.execute(today_query)
