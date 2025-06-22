@@ -155,7 +155,7 @@ class MatryoshkaFillBuilder:
             return self
 
         original_width, original_height = self.result.size
-        info_panel_width = 450
+        info_panel_width = 950
         new_width = original_width + info_panel_width
 
         # Create a new canvas with a solid background color
