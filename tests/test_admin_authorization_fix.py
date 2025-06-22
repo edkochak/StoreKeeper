@@ -8,10 +8,7 @@ from aiogram.types import Message, User as TgUser, Chat
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from app.handlers.admin_handler import (
-    cmd_report,
-    cmd_edit_store
-)
+from app.handlers.admin_handler import cmd_report, cmd_edit_store
 from app.services.store_service import StoreService
 
 
@@ -136,7 +133,21 @@ async def test_non_admin_cannot_use_report(create_message, state):
 
     message = create_message(chat_id=123456789)
 
-    await cmd_report(message, state)
+    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]):
+
+        with patch("app.handlers.admin_handler.get_session"):
+            with patch(
+                "app.handlers.admin_handler.RevenueService"
+            ) as mock_revenue_service:
+                mock_service_instance = AsyncMock()
+                mock_service_instance.export_report.return_value = (
+                    b"fake_excel",
+                    "filename",
+                )
+                mock_service_instance.get_matryoshka_data.return_value = []
+                mock_revenue_service.return_value = mock_service_instance
+
+                await cmd_report(message, state)
 
     message.answer.assert_called_once()
     call_args = message.answer.call_args[0][0]
