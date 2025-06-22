@@ -23,7 +23,7 @@ async def send_daily_report(bot: Bot):
 
         resources_dir = Path(__file__).parent.parent.parent / "resources"
         resources_dir.mkdir(exist_ok=True)
-        template_path = str(resources_dir / "matryoshka_template.png")
+        template_path = str(resources_dir / "bear3.glb")
 
         if not os.path.exists(template_path):
             from PIL import Image, ImageDraw
@@ -193,7 +193,6 @@ if __name__ == "__main__":
     )
 
     bot = Bot(token=config.BOT_TOKEN)
-    ADMIN_CHAT_IDS.pop(1)
 
     logger.info("Запуск тестовой отправки ежедневного отчета")
     loop = asyncio.get_event_loop()
