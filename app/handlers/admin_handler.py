@@ -39,7 +39,7 @@ async def cmd_report(message: types.Message, state: FSMContext):
 
     resources_dir = Path(__file__).parent.parent.parent / "resources"
     resources_dir.mkdir(exist_ok=True)
-    template_path = str(resources_dir / "matryoshka_template.png")
+    template_path = str(resources_dir / "bear3.glb")
     print(template_path)
 
     if not os.path.exists(template_path):
