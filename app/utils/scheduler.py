@@ -2,6 +2,11 @@ import asyncio
 import io
 import pytz
 import logging
+
+if __name__ == "__main__":
+    import sys
+    sys.path.append("./")  # Добавляем корневую директорию в путь для импорта
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from aiogram import Bot
