@@ -69,7 +69,7 @@ async def cmd_report(message: types.Message, state: FSMContext):
         return
 
     matryoshka_buffers = create_matryoshka_collection(
-        template_path, shops_data, layout="vertical", max_per_image=2
+        template_path, shops_data, layout="vertical", max_per_image=3
     )
 
     await message.answer_document(

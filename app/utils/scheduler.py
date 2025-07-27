@@ -75,7 +75,7 @@ async def send_daily_report(bot: Bot):
             return
 
         matryoshka_buffers = create_matryoshka_collection(
-            template_path, shops_data, layout="vertical", max_per_image=2
+            template_path, shops_data, layout="vertical", max_per_image=3
         )
 
         config_admins = sum(
