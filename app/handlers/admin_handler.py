@@ -35,6 +35,8 @@ async def cmd_report(message: types.Message, state: FSMContext):
 
     await state.clear()
 
+    stores_per_image = 3
+
     msg = await message.answer("Генерируется отчет, подождите...")
 
     resources_dir = Path(__file__).parent.parent.parent / "resources"
@@ -69,7 +71,7 @@ async def cmd_report(message: types.Message, state: FSMContext):
         return
 
     matryoshka_buffers = create_matryoshka_collection(
-        template_path, shops_data, layout="vertical", max_per_image=3
+        template_path, shops_data, layout="vertical", max_per_image=stores_per_image
     )
 
     await message.answer_document(
@@ -79,7 +81,7 @@ async def cmd_report(message: types.Message, state: FSMContext):
 
     for i, matryoshka_buf in enumerate(matryoshka_buffers, 1):
 
-        stores_in_image = shops_data[(i - 1) * 2 : i * 2]
+        stores_in_image = shops_data[(i - 1) * stores_per_image : i * stores_per_image]
         stores_names = ", ".join([s["title"] for s in stores_in_image])
 
         await message.answer_photo(

@@ -74,8 +74,10 @@ async def send_daily_report(bot: Bot):
             logger.info("Нет данных для отчета - отправка пропущена")
             return
 
+        stores_per_image = 3
+
         matryoshka_buffers = create_matryoshka_collection(
-            template_path, shops_data, layout="vertical", max_per_image=3
+            template_path, shops_data, layout="vertical", max_per_image=stores_per_image
         )
 
         config_admins = sum(
@@ -109,7 +111,7 @@ async def send_daily_report(bot: Bot):
                 )
 
                 for i, matryoshka_buf in enumerate(matryoshka_buffers, 1):
-                    stores_in_image = shops_data[(i - 1) * 2 : i * 2]
+                    stores_in_image = shops_data[(i - 1) * stores_per_image : i * stores_per_image]
                     stores_names = ", ".join([s["title"] for s in stores_in_image])
 
                     await bot.send_photo(
