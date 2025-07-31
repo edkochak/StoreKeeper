@@ -19,8 +19,8 @@ def render_model_with_fill(
     Загружает 3D-модель, заполняет её и возвращает изображение в виде объекта PIL.Image.
     """
     if not 0 <= percentage <= 100:
-        print(f"Ошибка: Процент должен быть в диапазоне от 0 до 100.")
-        return None
+        print(f"Ошибка: Процент должен быть в диапазоне от 0 до 100. Меняю на 0/100: {percentage}")
+        percentage = max(0, min(percentage, 100))
 
     try:
         mesh = pv.read(file_path)
