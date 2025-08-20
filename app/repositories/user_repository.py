@@ -134,6 +134,17 @@ class UserRepository:
 
     async def update_chat_id(self, user: User, chat_id: int) -> User:
         """Обновить Telegram chat_id пользователя"""
+        if user.chat_id == chat_id:
+            return user
+
+        # Гарантируем уникальность chat_id: если он уже у другого пользователя, освобождаем
+        existing = await self.get_by_chat_id(chat_id)
+        if existing and existing.id != user.id:
+            existing.chat_id = None
+            self.session.add(existing)
+            # flush, чтобы уникальный индекс освободился до назначения новому пользователю
+            await self.session.flush()
+
         user.chat_id = chat_id
         self.session.add(user)
         await self.session.commit()
