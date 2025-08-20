@@ -10,6 +10,7 @@ from app.core.states import (
     EditStoreStates,
     EditManagerStates,
     EditRevenueStates,
+    AdminManagementStates,
 )
 from app.core.database import get_session
 from app.services.store_service import StoreService
@@ -584,6 +585,51 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
                 )
                 return
 
+    await state.clear()
+
+
+@router.message(Command("addadmin"))
+async def cmd_add_admin(message: types.Message, state: FSMContext):
+    """Назначить администратора по имени и фамилии (доступно только админам)"""
+    if message.chat.id not in ADMIN_CHAT_IDS:
+        await message.answer(
+            "У вас нет прав администратора для выполнения этой команды."
+        )
+        return
+
+    await state.clear()
+    await message.answer(
+        "Введите имя и фамилию пользователя, которого нужно сделать администратором (через пробел):",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+    await state.set_state(AdminManagementStates.waiting_full_name)
+
+
+@router.message(AdminManagementStates.waiting_full_name)
+async def process_add_admin_full_name(message: types.Message, state: FSMContext):
+    """Обработка ФИ и назначение роли администратора. Пользователь может не существовать — создадим."""
+    text = message.text.strip()
+    parts = text.split()
+    if len(parts) < 2:
+        await message.answer("Пожалуйста, укажите имя и фамилию через пробел:")
+        return
+
+    first_name, last_name = parts[0], " ".join(parts[1:])
+
+    async with get_session() as session:
+        user_service = UserService(session)
+        try:
+            user = await user_service.ensure_admin_by_name(first_name, last_name)
+        except ValueError:
+            await message.answer(
+                "Имя и фамилия должны состоять из одного слова каждая. Повторите ввод."
+            )
+            return
+
+    await message.answer(
+        f"✅ Пользователь {first_name} {last_name} назначен администратором. При авторизации будет иметь роль admin.",
+        reply_markup=get_main_keyboard("admin"),
+    )
     await state.clear()
 
 

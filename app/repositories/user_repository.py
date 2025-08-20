@@ -71,6 +71,12 @@ class UserRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_chat_id(self, chat_id: int) -> Optional[User]:
+        """Получить пользователя по Telegram chat_id"""
+        query = select(User).where(User.chat_id == chat_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
     async def create(
         self, first_name: str, last_name: str, role: str, store_id: Optional[int] = None
     ) -> User:
@@ -109,6 +115,14 @@ class UserRepository:
     async def update_last_name(self, user: User, last_name: str) -> User:
         """Обновить фамилию пользователя"""
         user.last_name = last_name
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
+
+    async def update_role(self, user: User, role: str) -> User:
+        """Обновить роль пользователя"""
+        user.role = role
         self.session.add(user)
         await self.session.commit()
         await self.session.refresh(user)

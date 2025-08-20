@@ -49,3 +49,7 @@ class EditManagerStates(StatesGroup):
     waiting_manager = State()
     waiting_field = State()
     waiting_value = State()
+
+
+class AdminManagementStates(StatesGroup):
+    waiting_full_name = State()

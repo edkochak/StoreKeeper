@@ -3,7 +3,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 ADMIN_MENU_TEXT = """
 📊 <b>Меню администратора</b>
-  
+
 Доступные команды:
 /report - Выгрузить отчет в Excel с показателями выполнения плана
 /setplan - Установить план для магазина
@@ -15,6 +15,7 @@ ADMIN_MENU_TEXT = """
 /editrevenue - Корректировать выручку любого магазина за любую дату
 /users - Показать всех пользователей
 /stores - Показать все магазины
+/addadmin - Назначить администратора по имени и фамилии
 /help - Показать это сообщение
 
 Администратор имеет доступ к управлению всеми магазинами и отчетам.
@@ -65,6 +66,7 @@ def get_main_keyboard(role: str = None):
         builder.row(
             types.KeyboardButton(text="/stores"), types.KeyboardButton(text="/help")
         )
+        builder.row(types.KeyboardButton(text="/addadmin"))
     elif role == "manager":
         builder.row(
             types.KeyboardButton(text="/revenue"), types.KeyboardButton(text="/status")

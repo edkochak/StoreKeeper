@@ -128,3 +128,20 @@ class UserService:
             bool: True если пользователь может управлять пользователями, иначе False
         """
         return user.role == "admin"
+
+    async def get_by_chat_id(self, chat_id: int) -> Optional[User]:
+        """Получить пользователя по chat_id"""
+        return await self.repo.get_by_chat_id(chat_id)
+
+    async def promote_to_admin(self, user: User) -> User:
+        """Назначить пользователя администратором"""
+        return await self.repo.update_role(user, "admin")
+
+    async def ensure_admin_by_name(self, first_name: str, last_name: str) -> User:
+        """Гарантировать, что пользователь с таким именем/фамилией существует и имеет роль admin"""
+        user = await self.get_by_name(first_name, last_name)
+        if not user:
+            user = await self.get_or_create(first_name, last_name, "admin")
+        elif user.role != "admin":
+            user = await self.repo.update_role(user, "admin")
+        return user
