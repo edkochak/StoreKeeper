@@ -65,16 +65,45 @@ async def test_admin_commands_access_denied(create_message, state, admin_chat_id
 
 
 @pytest.mark.asyncio
-async def test_admin_commands_access_granted(create_message, state, admin_chat_ids):
-    """Тест разрешения доступа к админским командам для администраторов"""
+async def test_admin_commands_access_granted_env(create_message, state, admin_chat_ids):
+    """Доступ к админ-командам по ADMIN_CHAT_IDS (из .env)"""
 
     message = create_message(chat_id=987654321)
 
-    with patch("app.handlers.admin_handler.get_session"):
+    with patch("app.handlers.admin_handler.get_session"), \
+        patch("app.utils.permissions.get_session"):
         with patch("app.handlers.admin_handler.StoreService"):
-
             await cmd_add_store(message, state)
+            message.answer.assert_called_once()
+            assert (
+                "нет прав администратора" not in message.answer.call_args[0][0].lower()
+            )
 
+
+@pytest.mark.asyncio
+async def test_admin_commands_access_granted_db_role(create_message, state, session):
+    """Доступ к админ-командам по роли admin в БД (без наличия в .env)"""
+
+    # Создаём пользователя с ролью admin и chat_id
+    from app.services.user_service import UserService
+
+    user_svc = UserService(session)
+    user = await user_svc.get_or_create("Db", "Admin", "admin")
+    await user_svc.update_chat_id(user, 555777)
+
+    message = create_message(chat_id=555777)
+
+    class SessionContext:
+        async def __aenter__(self):
+            return session
+
+        async def __aexit__(self, *args):
+            pass
+
+    with patch("app.handlers.admin_handler.get_session", return_value=SessionContext()), \
+        patch("app.utils.permissions.get_session", return_value=SessionContext()):
+        with patch("app.handlers.admin_handler.StoreService"):
+            await cmd_add_store(message, state)
             message.answer.assert_called_once()
             assert (
                 "нет прав администратора" not in message.answer.call_args[0][0].lower()

@@ -47,7 +47,9 @@ def session_patch(session):
 
 @pytest.mark.asyncio
 async def test_add_admin_creates_new_user(create_message, state, session_patch):
-    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]):
+    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.get_session", return_value=type("S", (), {"__aenter__": lambda s: session_patch, "__aexit__": lambda s, *a: None})()):
         # Старт команды от администратора
         msg = create_message(chat_id=987654321)
         await cmd_add_admin(msg, state)
@@ -73,7 +75,9 @@ async def test_add_admin_promotes_existing_user(create_message, state, session_p
     existing = await user_svc.get_or_create("Bob", "Jones", "manager")
     assert existing.role == "manager"
 
-    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]):
+    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.get_session", return_value=type("S", (), {"__aenter__": lambda s: session_patch, "__aexit__": lambda s, *a: None})()):
         msg = create_message(chat_id=987654321)
         await cmd_add_admin(msg, state)
 
@@ -95,7 +99,9 @@ async def test_add_admin_denied_for_non_admin(create_message, state):
 
 @pytest.mark.asyncio
 async def test_add_admin_invalid_full_name(create_message, state, session_patch):
-    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]):
+    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.get_session", return_value=type("S", (), {"__aenter__": lambda s: session_patch, "__aexit__": lambda s, *a: None})()):
         msg = create_message(chat_id=987654321)
         await cmd_add_admin(msg, state)
 

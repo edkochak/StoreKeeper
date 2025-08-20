@@ -145,9 +145,18 @@ async def test_cmd_edit_manager(create_message, state, session_patch):
     user_svc = UserService(session_patch)
     manager = await user_svc.get_or_create("TestEdit", "Manager", "manager")
 
+    class SessionContext:
+        async def __aenter__(self):
+            return session_patch
+
+        async def __aexit__(self, *args):
+            pass
+
     with patch(
         "app.services.user_service.UserService.get_all_users", return_value=[manager]
-    ), patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [123456789]):
+    ), patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [123456789]), \
+        patch("app.utils.permissions.ADMIN_CHAT_IDS", [123456789]), \
+        patch("app.utils.permissions.get_session", return_value=SessionContext()):
 
         message = create_message()
         await cmd_edit_manager(message, state)

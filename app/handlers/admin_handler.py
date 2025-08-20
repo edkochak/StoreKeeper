@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from app.core.config import ADMIN_CHAT_IDS
+from app.utils.permissions import is_admin_chat
 from app.core.states import (
     AssignStates,
     CreateStoreStates,
@@ -26,9 +27,11 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
+
+
 @router.message(Command("report"))
 async def cmd_report(message: types.Message, state: FSMContext):
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -98,7 +101,7 @@ async def cmd_report(message: types.Message, state: FSMContext):
 @router.message(Command("assign"))
 async def cmd_assign_manager(message: types.Message, state: FSMContext):
     """Привязать менеджера к магазину"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -199,7 +202,7 @@ async def process_store_selection(message: types.Message, state: FSMContext):
 @router.message(Command("users"))
 async def cmd_list_users(message: types.Message, state: FSMContext):
     """Просмотр списка пользователей"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -229,7 +232,7 @@ async def cmd_list_users(message: types.Message, state: FSMContext):
 @router.message(Command("stores"))
 async def cmd_list_stores(message: types.Message, state: FSMContext):
     """Просмотр списка магазинов и их менеджеров"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -261,7 +264,7 @@ async def cmd_add_store(message: types.Message, state: FSMContext):
     """Добавление нового магазина"""
 
     await state.clear()
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -330,7 +333,7 @@ async def cmd_add_manager(message: types.Message, state: FSMContext):
     """Добавление нового менеджера"""
 
     await state.clear()
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -591,7 +594,7 @@ async def process_edit_store_value(message: types.Message, state: FSMContext):
 @router.message(Command("addadmin"))
 async def cmd_add_admin(message: types.Message, state: FSMContext):
     """Назначить администратора по имени и фамилии (доступно только админам)"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )
@@ -636,7 +639,7 @@ async def process_add_admin_full_name(message: types.Message, state: FSMContext)
 @router.message(Command("editmanager"))
 async def cmd_edit_manager(message: types.Message, state: FSMContext):
     """Редактирование существующего менеджера"""
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer(
             "У вас нет прав администратора для выполнения этой команды."
         )

@@ -63,28 +63,28 @@ async def test_admin_report_after_other_commands(create_message, state, admin_ch
 
     message = create_message()
 
-    with patch("app.handlers.admin_handler.get_session"):
-        with patch(
-            "app.handlers.admin_handler.StoreService.list_stores", return_value=[]
-        ):
-            await cmd_edit_store(message, state)
+    with patch("app.handlers.admin_handler.get_session"), \
+         patch("app.utils.permissions.get_session"), \
+         patch("app.handlers.admin_handler.StoreService.list_stores", return_value=[]):
+        await cmd_edit_store(message, state)
 
     data_after_editstore = await state.get_data()
     assert data_after_editstore.get("user_id") is None
 
     message_report = create_message()
 
-    with patch("app.handlers.admin_handler.get_session"):
-        with patch("app.handlers.admin_handler.RevenueService") as mock_revenue_service:
-            mock_service_instance = AsyncMock()
-            mock_service_instance.export_report.return_value = (
-                b"fake_excel",
-                "filename",
-            )
-            mock_service_instance.get_matryoshka_data.return_value = []
-            mock_revenue_service.return_value = mock_service_instance
+    with patch("app.handlers.admin_handler.get_session"), \
+         patch("app.utils.permissions.get_session"), \
+         patch("app.handlers.admin_handler.RevenueService") as mock_revenue_service:
+        mock_service_instance = AsyncMock()
+        mock_service_instance.export_report.return_value = (
+            b"fake_excel",
+            "filename",
+        )
+        mock_service_instance.get_matryoshka_data.return_value = []
+        mock_revenue_service.return_value = mock_service_instance
 
-            await cmd_report(message_report, state)
+        await cmd_report(message_report, state)
 
     message_report.answer.assert_called()
     call_args = message_report.answer.call_args[0][0]
@@ -107,17 +107,18 @@ async def test_admin_report_works_without_fsm_state(
 
     message = create_message()
 
-    with patch("app.handlers.admin_handler.get_session"):
-        with patch("app.handlers.admin_handler.RevenueService") as mock_revenue_service:
-            mock_service_instance = AsyncMock()
-            mock_service_instance.export_report.return_value = (
-                b"fake_excel",
-                "filename",
-            )
-            mock_service_instance.get_matryoshka_data.return_value = []
-            mock_revenue_service.return_value = mock_service_instance
+    with patch("app.handlers.admin_handler.get_session"), \
+         patch("app.utils.permissions.get_session"), \
+         patch("app.handlers.admin_handler.RevenueService") as mock_revenue_service:
+        mock_service_instance = AsyncMock()
+        mock_service_instance.export_report.return_value = (
+            b"fake_excel",
+            "filename",
+        )
+        mock_service_instance.get_matryoshka_data.return_value = []
+        mock_revenue_service.return_value = mock_service_instance
 
-            await cmd_report(message, state)
+        await cmd_report(message, state)
 
     message.answer.assert_called()
     call_args = message.answer.call_args[0][0]
@@ -133,21 +134,21 @@ async def test_non_admin_cannot_use_report(create_message, state):
 
     message = create_message(chat_id=123456789)
 
-    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]):
+    with patch("app.handlers.admin_handler.ADMIN_CHAT_IDS", [987654321]), \
+         patch("app.utils.permissions.ADMIN_CHAT_IDS", [987654321]):
 
-        with patch("app.handlers.admin_handler.get_session"):
-            with patch(
-                "app.handlers.admin_handler.RevenueService"
-            ) as mock_revenue_service:
-                mock_service_instance = AsyncMock()
-                mock_service_instance.export_report.return_value = (
-                    b"fake_excel",
-                    "filename",
-                )
-                mock_service_instance.get_matryoshka_data.return_value = []
-                mock_revenue_service.return_value = mock_service_instance
+        with patch("app.handlers.admin_handler.get_session"), \
+             patch("app.utils.permissions.get_session"), \
+             patch("app.handlers.admin_handler.RevenueService") as mock_revenue_service:
+            mock_service_instance = AsyncMock()
+            mock_service_instance.export_report.return_value = (
+                b"fake_excel",
+                "filename",
+            )
+            mock_service_instance.get_matryoshka_data.return_value = []
+            mock_revenue_service.return_value = mock_service_instance
 
-                await cmd_report(message, state)
+            await cmd_report(message, state)
 
     message.answer.assert_called_once()
     call_args = message.answer.call_args[0][0]

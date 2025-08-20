@@ -3,6 +3,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from app.core.config import ADMIN_CHAT_IDS
+from app.core.database import get_session
+from app.services.user_service import UserService
+from app.utils.permissions import is_admin_chat
 from app.core.states import PlanStates
 from app.core.database import get_session
 from app.services.store_service import StoreService
@@ -17,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @router.message(Command("setplan"))
 async def cmd_setplan(message: types.Message, state: FSMContext):
-    if message.chat.id not in ADMIN_CHAT_IDS:
+    if not await is_admin_chat(message.chat.id):
         await message.answer("У вас нет прав для установки плана.")
         return
 
