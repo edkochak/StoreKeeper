@@ -1,7 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, update
 from typing import List, Optional
 from app.repositories.store_repository import StoreRepository
 from app.models.store import Store
+from app.models.revenue import Revenue
+from app.models.monthly_plan import MonthlyPlan
+from app.models.user import User
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,4 +42,21 @@ class StoreService:
         return await self.repo.update_name(store, new_name)
 
     async def delete_store(self, store: Store) -> None:
+        """
+        Удаляет магазин и безопасно очищает связанные данные:
+        - удаляет все записи выручки по магазину
+        - удаляет все помесячные планы по магазину
+        - отвязывает менеджеров от магазина (обнуляет store_id)
+        """
+
+        session = self.repo.session
+
+        # Удаляем зависимые записи, чтобы не нарушать ограничение NOT NULL у revenues.store_id
+        await session.execute(delete(Revenue).where(Revenue.store_id == store.id))
+        await session.execute(delete(MonthlyPlan).where(MonthlyPlan.store_id == store.id))
+        await session.execute(
+            update(User).where(User.store_id == store.id).values(store_id=None)
+        )
+        await session.commit()
+
         await self.repo.delete_store(store)
