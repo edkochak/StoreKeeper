@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
 
     if message.chat.id in ADMIN_CHAT_IDS:
 
